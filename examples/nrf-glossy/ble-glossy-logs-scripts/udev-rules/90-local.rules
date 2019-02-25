@@ -1,0 +1,11 @@
+# mbed CMSIS-DAP
+ATTRS{idVendor}=="0d28", ATTRS{idProduct}=="0204", MODE="664", GROUP="plugdev"
+KERNEL=="hidraw*", ATTRS{idVendor}=="0d28", ATTRS{idProduct}=="0204", MODE="664", GROUP="plugdev"
+
+SUBSYSTEM=="block", ACTION=="add", ATTRS{idVendor}=="0d28", ATTRS{idProduct}=="0204", SYMLINK+="BLENANO" \
+RUN+="/bin/mkdir -p /media/BLENANO", RUN+="/bin/mount /dev/BLENANO /media/BLENANO -o umask=000"
+
+SUBSYSTEM=="block", ACTION=="remove", ATTRS{idVendor}=="0d28", ATTRS{idProduct}=="0204" \
+RUN+="/bin/umount /media/BLENANO", RUN+="/bin/rm -r /media/BLENANO"
+
+SUBSYSTEM=="tty", ACTION=="add", ATTRS{idVendor}=="0d28", ATTRS{idProduct}=="0204", SYMLINK+="ttyBLENANO"

@@ -1,0 +1,125 @@
+# nrf51822's Core51822 platform makefile
+
+ifndef CONTIKI
+  $(error CONTIKI not defined! You must specify where CONTIKI resides!)
+endif
+
+#CONTIKI_TARGET_DIRS = $(shell find $(CONTIKI)/platform/$(TARGET) -type d)
+CONTIKI_TARGET_DIRS = . dev apps
+$(info $(CONTIKI_TARGET_DIRS))
+
+ifndef CONTIKI_TARGET_MAIN
+CONTIKI_TARGET_MAIN = contiki-main.c
+endif
+
+$(info $(CONTIKI)/platform/$(TARGET))
+#CONTIKI_TARGET_SOURCEFILES += $(shell find $(CONTIKI)/platform/$(TARGET) -name *.c | awk -F/ '{print $$NF}')
+
+CONTIKI_TARGET_SOURCEFILES = contiki-main.c leds-arch.c node-id.c
+
+$(info $(CONTIKI_TARGET_SOURCEFILES))
+
+#TARGET_START_SOURCEFILES += startup-gcc.c
+#TARGET_STARTFILES = ${addprefix $(OBJECTDIR)/,${call oname, $(TARGET_START_SOURCEFILES)}}
+
+CONTIKI_SOURCEFILES += $(CONTIKI_TARGET_SOURCEFILES)
+
+CLEAN += *.$(TARGET) *.jlink
+
+### Unless the example dictates otherwise, build with code size optimisations
+#ifndef SMALL
+#  SMALL = 1
+#endif
+
+### Define the CPU directory
+CONTIKI_CPU=$(CONTIKI)/cpu/arm/nrf51822
+include $(CONTIKI_CPU)/Makefile.nrf51822
+
+MODULES += core/net/mac \
+           core/net \
+           core/net/mac/contikimac core/net/mac/cxmac \
+           core/net/llsec core/net/llsec/noncoresec
+
+DEV_TYPE ?= WVSHARE
+
+ifeq ($(HOST_OS),Darwin)
+
+	ifeq ($(DEV_TYPE),BLE_NANO)
+	  ifndef MOTELIST
+	    USBDEVPREFIX=/dev/tty.usbmodem
+	    SERIALDUMP = $(CONTIKI)/tools/Core51822/serialdump-macos-blenano
+	    MOTELIST = $(CONTIKI)/tools/Core51822/motelist-macos-blenano
+	  endif
+	    MOTES = $(shell $(MOTELIST) 2>&- | grep usbmodem | \
+	       cut -d ' ' -f1)
+	    CMOTES=$(MOTES)
+	endif
+	  
+	ifeq ($(DEV_TYPE),WVSHARE)
+		  ifndef MOTELIST
+	    USBDEVPREFIX=/dev/tty.SLAB_USBtoUAR
+	    SERIALDUMP = $(CONTIKI)/tools/Core51822/serialdump-macos
+	    MOTELIST = $(CONTIKI)/tools/Core51822/motelist-macos
+  endif
+	    MOTES = $(shell $(MOTELIST) 2>&- | grep SLAB_USBtoUAR | \
+	       cut -d ' ' -f1)
+	    CMOTES=$(MOTES)
+	endif
+endif
+
+ifeq ($(HOST_OS),Linux)
+
+	ifeq ($(DEV_TYPE),BLE_NANO)
+	  ifndef MOTELIST
+	    USBDEVPREFIX=/dev/ttyBLENANO_
+	    SERIALDUMP = $(CONTIKI)/tools/Core51822/serialdump
+	    MOTELIST = $(CONTIKI)/tools/Core51822/motelist-linux-blenano
+	  endif
+	    MOTES = $(shell $(MOTELIST) 2>&- | grep ttyBLENANO_ | \
+	       cut -d ' ' -f1)
+	    CMOTES=$(MOTES)
+	endif
+	  
+	ifeq ($(DEV_TYPE),WVSHARE)
+		  ifndef MOTELIST
+	    USBDEVPREFIX=/dev/tty.SLAB_USBtoUAR
+	    SERIALDUMP = $(CONTIKI)/tools/Core51822/serialdump-macos
+	    MOTELIST = $(CONTIKI)/tools/Core51822/motelist-macos
+  endif
+	    MOTES = $(shell $(MOTELIST) 2>&- | grep SLAB_USBtoUAR | \
+	       cut -d ' ' -f1)
+	    CMOTES=$(MOTES)
+	endif
+endif
+
+
+ifdef MOTE
+serialdump:
+	$(SERIALDUMP) -b230400 $(USBDEVPREFIX)$(word $(MOTE), $(CMOTES)) | $(CONTIKI)/tools/timestamp | tee serialdump-$(MOTE)-`date +%Y%m%d-%H%M`
+
+serialview:
+	$(SERIALDUMP) -b230400 $(USBDEVPREFIX)$(word $(MOTE), $(CMOTES)) | $(CONTIKI)/tools/timestamp
+
+login:
+	$(SERIALDUMP) -b230400 $(USBDEVPREFIX)$(word $(MOTE), $(CMOTES))
+else
+serialdump:
+	$(SERIALDUMP) -b230400 $(USBDEVPREFIX)$(firstword $(CMOTES)) | $(CONTIKI)/tools/timestamp | tee serialdump-`date +%Y%m%d-%H%M`
+
+serialview:
+	$(SERIALDUMP) -b230400 $(USBDEVPREFIX)$(firstword $(CMOTES)) | $(CONTIKI)/tools/timestamp
+
+login:
+	$(SERIALDUMP) -b230400 $(USBDEVPREFIX)$(firstword $(CMOTES))
+endif
+
+seriallog.%:
+	$(SERIALDUMP) -b230400 $(USBDEVPREFIX)$(subst _,/,$*) | $(CONTIKI)/tools/timestamp | tee seriallog-$*-`date +%Y%m%d-%H%M`
+
+seriallog-all:
+	$(MAKE) -j $(NUMPAR) serialdump-sequence
+
+serialdump-sequence:	$(foreach PORT, $(MOTES), seriallog.$(subst /,_,$(PORT)))
+	@echo Done
+
+print-%: ; @echo $*=$($*)

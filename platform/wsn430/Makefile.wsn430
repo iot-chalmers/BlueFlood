@@ -1,0 +1,15 @@
+# $Id: Makefile.sky,v 1.38 2010/05/03 13:51:11 nifi Exp $
+
+#CONTIKI_TARGET_SOURCEFILES += contiki-wsn430-platform.c 
+
+ifndef SMALL
+SMALL=1
+endif
+
+include $(CONTIKI)/platform/wsn430/Makefile.common
+
+MODULES += core/net/mac \
+           core/net \
+           core/net/mac/contikimac core/net/mac/cxmac \
+           core/net/llsec core/net/llsec/noncoresec \
+           dev/cc2420 dev/ds2411

@@ -1,0 +1,21 @@
+1544093147874677 Terminal ready
+1544093465364283 
+1544093465418485 FATAL: term closed
+1544093466349479 picocom v1.7
+1544093466371859 
+1544093466422549 port is        : /dev/serial/by-id/usb-SEGGER_J-Link_000683912157-if00
+1544093466438179 flowcontrol    : RTS/CTS
+1544093466451246 baudrate is    : 460800
+1544093466463931 parity is      : none
+1544093466477396 databits are   : 8
+1544093466490117 escape is      : C-a
+1544093466502568 local echo is  : no
+1544093466515234 noinit is      : no
+1544093466528026 noreset is     : yes
+1544093466540613 nolock is      : no
+1544093466573885 send_cmd is    : sz -vv
+1544093466588616 receive_cmd is : rz -vv
+1544093466629599 imap is        : lfcrlf,
+1544093466642377 omap is        : 
+1544093466671114 emap is        : crcrlf,delbs,
+1544093466699623 

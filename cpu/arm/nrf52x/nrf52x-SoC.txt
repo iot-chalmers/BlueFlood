@@ -1,0 +1,7 @@
+/**
+*\defgroup nrf51822 nrf51822 SoC
+* This module contains all the device drivers and Contiki drivers 
+* required for the nrf51822 System on Chip 
+* @{
+*/
+/** @} */

@@ -1,0 +1,387 @@
+All experiments (1-11) are on the BLE advertising channel 37 (2402MHz) and tx power = 0 dB.
+To do: repeat with varying tx power.
+
+No cables:
+CI experiment 1
+1 master (4) + 2 slaves (6,7) - pca10028 boards
+OK 10534 of 11263 = 93.527%
+
+CI experiment 11
+No cables
+1 master (4) + 2 slaves (5,6) - pca10028 boards
+OK 13998 of 14416 = 97.10 %
+
+CI experiment 2
+1 master (4) + 3 slaves (5,6,7) - pca10028 boards
+OK 20566 of 27892 = 73.734%
+
+CI experiment 3
+1 master (4 - pca10028 board) + 2 slaves (8,10 Nano - standing) 
+OK 18508 of 22803  = 81.117%
+
+CI experiment 4
+1 master (4 - pca10028 board) + 3 slaves (8,10,12 Nano - standing) 
+OK 17768 of 20073 = 88.517%
+
+(exp 5,6: I had students here with laptops!)
+CI experiment 5
+1 master (4 - pca10028 board) + 2 slaves (9,11 Nano - horizontal) 
+OK 74209 of 114342 = 64.900 %
+
+CI experiment 6
+1 master (4 - pca10028 board) + 3 slaves (9,11,13 Nano - horizontal) 
+OK 10334 of 18229 = 56.69 %
+
+CI experiment 7
+1 master (4 - pca10028 board) + 4 slaves (9,11,13 Nano - horizontal + 8: Nano - vertical) 
+OK 10650 of 19336 = 55.079%
+
+CI experiment 8
+1 master (4 - pca10028 board) + 6 slaves (9,11,13 Nano - horizontal) + (8,10,12 Nano - standing)
+OK 6954 of 16800 = 41.39 %
+
+CI experiment 9
+With the black cables
+1 master (4) + 2 slaves (6,7) - pca10028 boards
+Note: the cable setup is not fully symmetric: Every node has a 15db attenuator, but the senders has black cables while the inititator does not.
+OK 10620 of 27093 = 39.189 %
+Drift between senders measured with a logic analyzer: 0--320ns. ... mean about 160ns
+
+CI experiment 10
+With the black cables
+1 master (4) + 2 slaves (5,6) - pca10028 boards
+Note: the cable setup is not fully symmetric: Every node has a 15db attenuator, but the senders has black cables while the inititator does not.
+OK 13801 of 14394 = 95.88 %
+Drift between senders measured with a logic analyzer: 0--160ns. ... mean about 40ns
+
+
+----
+Error patterns:
+CI experiment 11
+With the black cables
+1 master (4) + 2 slaves (5,7) - pca10028 boards
+Note: the cable setup is not fully symmetric: Every node has a 15db attenuator, but the senders has black cables while the inititator does not.
+Power: -40 dBm, frequency: 2498MHz
+OK 22654 of 26787 = 84.57 %
+
+CI experiment 12
+With the black cables
+1 master (4) + 2 slaves (6,7) - pca10028 boards
+Note: the cable setup is not fully symmetric: Every node has a 15db attenuator, but the senders has black cables while the inititator does not.
+Power: -1 dBm, frequency: 2498MHz
+OK 1275 of 9179 = 13.89 %
+
+CI experiment 13
+With the black cables
+1 master (4) + 2 slaves (5,6) - pca10028 boards
+Note: the cable setup is not fully symmetric: Every node has a 15db attenuator, but the senders has black cables while the inititator does not.
+Power: -1 dBm, frequency: 2498MHz
+OK  10355 of 10442 = 98.97%
+
+CI experiment 14
+With the black cables
+1 master (4) + 2 slaves (5,7) - pca10028 boards
+Note: the cable setup is not fully symmetric: Every node has a 15db attenuator, but the senders has black cables while the inititator does not.
+Power: -1 dBm, frequency: 2498MHz
+OK 21955 of 24451 = 89.79 %
+
+---
+CI experiment 15 - No cables
+1 master (4) + 3 slaves (5,6,7) - pca10028 boards
+Power: 0 dBm, frequency: 2498MHz
+OK 7773 of 10435 = 74.49 %
+
+CI exp 16 - No cables
+1 master (4 - pca10028 board) + 10 slaves (9,11,13 Nano - horizontal) + (8,10,12,14 Nano - standing) + (5,6,7 - pca10028 boards)
+Power: 0 dBm, frequency: 2498MHz
+OK 5050 of 22998 = 21.96%
+
+CI exp 17 - No cables
+1 master (4 - pca10028 board) + 6 slaves (9,11,13 Nano - horizontal) + (8,10,12 Nano - standing)
+Power: 0 dBm, frequency: 2498MHz
+OK 5204 of 11434 = 45.51%
+
+CI experiment 18 - No cables + hamming
+1 master (4) + 3 slaves (5,6,7) - pca10028 boards
+Power: 0 dBm, frequency: 2498MHz
+OK 14694 of 16166 = 90.8 %
+No hamming: exp 15.b:
+OK 5765 of 6235 = 92.46%
+
+---
+CT exp 19 - cables - change one byte only
+mode: 5 == BLE LR 125kbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+OK 7872 of 10608 = 74.21 %
+
+CI exp 20 - cables 
+mode: 5 == BLE LR 125kbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+OK 8904 of 11881 = 74.94 %
+
+CI exp 21 - cables 
+mode: 5 == BLE LR 125kbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: 0 dBm, frequency: 2498MHz
+OK 17152 of 20155 = 85.1%
+
+CI exp 22 - cables 
+mode: 3 == BLE 1mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: 0 dBm, frequency: 2498MHz
+OK 288 of 4143 = 6.9% !!
+
+CI exp 23 - no cables 
+mode: 3 == BLE 1mbps
+1 master (20) + 3 slaves (21,22,23) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+OK 71638 of 77578 = 92%
+
+----
+with fast rampup:
+
+CI exp 24 - cables 
+mode:  == BLE 500kbps
+1 master (20) + 2 slaves (21,23) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+7926 of 35751 =22%
+
+CI exp 25 - cables 
+mode:  == BLE 500kbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+OK 1761 of 10737=16%
+
+CI exp 26 - cables 
+RADIO_REV_C_OR_RADIO_REV_1=1
+mode:  == BLE 500kbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+OK 1716 of 9839 =17%
+
+CI exp 27 - cables 
+RADIO_REV_C_OR_RADIO_REV_1=1
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+OK 10162 of 25049 = 40.5%
+
+CI exp 28 - cables 
+RADIO_REV_C_OR_RADIO_REV_1=1
+mode: BLE 1Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+OK 20 of 2413 = 0.8% !!
+
+CI exp 29 - cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 1Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+OK 21 of 2409 = 0.8% !!
+
+CI exp 30 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 1Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+OK 1816 of 1840 = 98% !!
+
+CI exp 31 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 1Mbps
+1 master (20) + 2 slaves (22,23) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 5956 of 10777 = 55.27%
+
+CI exp 32 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 1Mbps
+1 master (20) + 3 slaves (21,22,23) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 2632 of 11157 = 23.59%
+
+CI exp 33 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 1Mbps
+1 master (20) + 4 slaves (21,22,23,24) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 2807 of 16831 = 16.68%
+
+CI exp 34 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 125K
+1 master (20) + 4 slaves (21,22,23,24) - pca10056 boards - on room corners
+Power: 0 dBm, frequency: 2498MHz
+OK 8845 of 10129
+
+CI exp 35 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 125K
+1 master (20) + 3 slaves (22,23,24) - pca10056 boards - on room corners
+Power: 0 dBm, frequency: 2498MHz
+OK 6706 of 6855
+
+CI exp 36 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 125K
+1 master (20) + 2 slaves (22,24) - pca10056 boards - on room corners - close and far
+Power: 0 dBm, frequency: 2498MHz
+OK 8464 of 8602
+
+CI exp 37 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 125K
+1 master (20) + 2 slaves (22,24) - pca10056 boards - on room corners 
+Power: 0 dBm, frequency: 2498MHz
+OK 30660 of 31040
+
+CI exp 38 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 125K
+1 master (20) + 4 slaves (21,22,23,24) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 7130 of 7130
+
+CI exp 39 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 125K
+1 master (20) + 3 slaves (22,23,24) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 7291 of 7291
+
+CI exp 40 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 125K
+1 master (20) + 3 slaves (22,24) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 1518 of 1518
+
+CI exp 41 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 4 slaves (21,22,23,24) - pca10056 boards - on room corners
+Power: 0 dBm, frequency: 2498MHz
+OK 4675 of 15115
+
+CI exp 42 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 3 slaves (22,23,24) - pca10056 boards - on room corners
+Power: 0 dBm, frequency: 2498MHz
+OK 12419 of 16502
+
+CI exp 43 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (23,24) - pca10056 boards - on room corners
+Power: 0 dBm, frequency: 2498MHz
+OK 8155 of 9144
+
+CI exp 44 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 4 slaves (21,22,23,24) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 256 of 2705
+
+CI exp 45 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 3 slaves (22,23,24) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 24228 of 98012
+
+CI exp 46 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (23,24) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 2371 of 19639
+
+CI exp 47 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 1 slaves (24) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+OK 3 of 1178
+
+CI exp 48 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 1 slaves (23) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+
+CI exp 49 - no cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (23,24) - pca10056 boards - on room corners
+Power: -40 dBm, frequency: 2498MHz
+repeated with less obstacles near the initiator
+OK 5808 of 13955
+
+CI exp 50 - cables 
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+attenuators -15 -15 -15
+OK 3347 of 7182
+
+CI exp 51 - cables - different data
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+attenuators 21: -15 22: -15-5 20: -15
+2500 of 5713
+
+CI exp 52 - cables - different data
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+attenuators 21: -15 22: -15-10 20: -15
+OK 2457 of 2461
+
+CI exp 53 - cables - different data
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+attenuators 21: -15 22: -15-7 20: -15
+OK 2377 of 2520
+
+CI exp 54 - cables - same data
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+attenuators 21: -15 22: -15-7 20: -15
+OK 1610 of 1610
+
+CI exp 55 - cables - same data
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+attenuators 21: -15 22: -15-5 20: -15
+OK 1817 of 1817
+
+CI exp 56 - cables - same data
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+attenuators 21: -15 22: -15-2 20: -15
+1671 of 2038
+
+CI exp 57 - cables - same data
+RADIO_REV_C_OR_RADIO_REV_1=0
+mode: BLE 2Mbps
+1 master (20) + 2 slaves (21,22) - pca10056 boards
+Power: -40 dBm, frequency: 2498MHz
+attenuators 21: -15 22: -15-1 20: -15
+OK 2489 of 5209

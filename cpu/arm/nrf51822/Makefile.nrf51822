@@ -1,0 +1,253 @@
+#### Toolchain commands
+####
+
+ifdef nodeid
+CFLAGS += -DNODEID=$(nodeid)
+endif
+
+## EVAL commands here!
+ifdef eval_channel
+CFLAGS += -DEVAL_CHANNEL=$(eval_channel)
+endif
+
+ifdef eval_power
+CFLAGS += -DEVAL_POWER=$(eval_power)
+endif
+
+ifdef eval_radio_mode
+CFLAGS += -DEVAL_RADIO_MODE=$(eval_radio_mode)
+endif
+
+ifdef eval_groups
+CFLAGS += -DEVAL_GROUPS=$(eval_groups)
+endif
+
+
+#FIXME: quick fix to get targets working in Eclipse
+PWD = $(shell pwd)
+
+GCC_INSTALL_ROOT	:= /usr/local/Caskroom/gcc-arm-embedded/7-2017-q4-major/gcc-arm-none-eabi-7-2017-q4-major/
+GCC_VERSION			:= 7.2.1
+GCC_PREFIX			:= arm-none-eabi
+
+CC      := $(GCC_INSTALL_ROOT)/bin/$(GCC_PREFIX)-gcc
+AS      := $(GCC_INSTALL_ROOT)/bin/$(GCC_PREFIX)-gcc
+AR      := $(GCC_INSTALL_ROOT)/bin/$(GCC_PREFIX)-ar
+LD      := $(GCC_INSTALL_ROOT)/bin/$(GCC_PREFIX)-gcc
+NM      := $(GCC_INSTALL_ROOT)/bin/$(GCC_PREFIX)-nm
+OBJDUMP := $(GCC_INSTALL_ROOT)/bin/$(GCC_PREFIX)-objdump
+OBJCOPY := $(GCC_INSTALL_ROOT)/bin/$(GCC_PREFIX)-objcopy
+GDB     := $(GCC_INSTALL_ROOT)/bin/$(GCC_PREFIX)-gdb
+SIZE	:= $(GCC_INSTALL_ROOT)/bin/$(GCC_PREFIX)-size
+
+MK	:= mkdir -p
+RM	:= rm -rf
+
+### General Variables
+OUTPUT_NAME		= main
+OUTPUT_DIR		= build
+BIN_DIR			= bin
+OBJ_DIR			= obj
+SRC_DIR			= src
+LINK_DIR		= link
+
+### Device related stuff
+###
+BOARD			:= BOARD_Core51822
+CPU				:= cortex-m0
+DEVICE 			:= NRF51
+DEVICESERIES 	:= nrf51
+BLE_REQD		:= BLE_STACK_SUPPORT_REQD
+
+### CPU-dependent cleanup files
+CLEAN += *.d *.elf *.hex *.bin
+
+### Programmer
+###
+#JLINK_DIR 		= /Applications/SEGGER/JLink/
+#JLINK 			= $(JLINK_DIR)JLinkExe
+JLINKGDBSERVER	= $(JLINK_DIR)JLinkGDBServer
+
+NRF_JLINK_PATH=$(shell location=$$(which JLinkExe) && dirname $$location)
+NRFDEV5X := NRF51
+
+# JLink
+JLINK := $(NRF_JLINK_PATH)/JLinkExe
+JLINK_OPTS = -Device $(NRFDEV5X) -if swd -speed 8000
+ifneq ($(NRF_JLINK_SN),)
+JLINK_OPTS += -SelectEmuBySN $(NRF_JLINK_SN)
+endif
+
+FLASH_START_ADDRESS		= 0x0
+#FLASH_START_ADDRESS	= 0x14000
+#SOFTDEVICE 			= s110_nrf51822_6.0.0_softdevice.hex
+
+# Include directories
+INCLUDEDIRS	 = $(shell find $(CONTIKI_CPU) -type d)
+INCLUDEDIRS	+= $(GCC_INSTALL_ROOT)/lib/gcc/$(GCC_PREFIX)/$(GCC_VERSION)/include/
+INCLUDEDIRS	+= $(GCC_INSTALL_ROOT)/lib/gcc/$(GCC_PREFIX)/$(GCC_VERSION)/include-fixed/
+#$(info "Included: $(INCLUDEDIRS) " )
+ 
+### Compiler related stuff
+###
+CFLAGS  += -Os		# O2 for size
+#CFLAGS  += -O0		# O2 for size
+#CFLAGS  += -Og   #debugging friendly
+CFLAGS  += -fverbose-asm
+CFLAGS	+= -ggdb	#info for the debugger
+CFLAGS	+= -mcpu=$(CPU)
+CFLAGS	+= -mthumb
+CFLAGS	+= -mabi=aapcs
+CFLAGS	+= --std=gnu99
+CFLAGS	+= -Wall
+CFLAGS	+= -D$(DEVICE)
+CFLAGS	+= -D$(BOARD)
+CFLAGS  += -D$(BLE_REQD)
+CFLAGS	+= $(patsubst %,-I%, $(INCLUDEDIRS))
+
+ASFLAGS = $(patsubst %,-I%, $(INCLUDEDIRS))
+ASFLAGS += -c
+
+### Linker related stuff
+###
+LDDIRS 	 = $(GCC_INSTALL_ROOT)/$(GCC_PREFIX)/lib/armv6-m
+LDDIRS 	+= $(GCC_INSTALL_ROOT)/lib/gcc/$(GCC_PREFIX)/$(GCC_VERSION)/armv6-m
+LDDIRS	+= $(LINK_DIR)
+
+#LD_SCRIPT = $(CONTIKI_CPU)/$(LINK_DIR)/gcc_nrf51_s110_xxaa.ld
+LD_SCRIPT = $(CONTIKI_CPU)/$(LINK_DIR)/gcc_nrf51_blank_xxaa.ld
+
+
+LDFLAGS = -Xlinker
+LDFLAGS += -Map=$(TARGET).map
+# use newlib in nano version
+LDFLAGS += --specs=nano.specs
+LDFLAGS += -u _printf_float
+LDFLAGS += -mcpu=$(CPU) 
+LDFLAGS += -mthumb 
+LDFLAGS += -mabi=aapcs 
+LDFLAGS += -T$(LD_SCRIPT)
+LDFLAGS	+= -D$(DEVICE)
+LDFLAGS	+= -D$(BOARD)
+LDFLAGS += -D$(BLE_REQD)
+LDFLAGS	+= $(patsubst %,-L%, $(LDDIRS))
+# let linker to dump unused sections
+#LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -Wl,-Map=$(@:.elf=-$(TARGET).map),--cref,--no-warn-mismatch
+OBJCOPY_FLAGS += -O binary --gap-fill 0xff
+OBJDUMP_FLAGS += --disassemble --source --disassembler-options=force-thumb
+
+### CPU-dependent directories
+#CONTIKI_CPU_DIRS = $(shell find $(CONTIKI_CPU) -type d)
+CONTIKI_CPU_DIRS = . nrf gcc contiki link peripherals dev
+
+### CPU-dependent source files
+#CONTIKI_CPU_SOURCEFILES = $(shell find . -name *.c | awk -F/ '{print $$NF}')
+CONTIKI_CPU_SOURCEFILES = system_nrf51.c clock.c rtimer-arch.c 
+CONTIKI_CPU_SOURCEFILES += clock-nrf.c simple-uart.c nrf-delay.c nrf-radio.c nrf-init.c
+CONTIKI_CPU_SOURCEFILES += watchdog.c
+#ASSEMBLY_SRC = gcc_startup_$(DEVICESERIES).S
+CONTIKI_CPU_SOURCEFILES += gcc-startup-$(DEVICESERIES).S
+CONTIKI_SOURCEFILES += $(CONTIKI_CPU_SOURCEFILES)
+
+#Create binary files 
+UPLOAD_TARGETS = $(CONTIKI_PROJECT:=.bin)
+TARGET_SIZE = $(CONTIKI_PROJECT:=.$(TARGET))
+obj-bin: $(UPLOAD_TARGETS)
+
+ASFLAGS += -x assembler-with-cpp
+#ASFLAGS += -DSWI_DISABLE0
+ASFLAGS += -DNRF51
+#ASFLAGS += -DCONFIG_GPIO_AS_PINRESET
+
+ASM_SOURCE_FILE_NAMES = $(notdir $(ASM_SOURCE_FILES))
+ASM_PATHS = $(call remduplicates, $(dir $(ASM_SOURCE_FILES) ))
+ASM_OBJECTS = $(addprefix $(OBJECTDIR)/, $(ASM_SOURCE_FILE_NAMES:.s=.o) )
+
+#vpath %.s $(ASM_PATHS)
+
+### CPU-dependent cleanup files
+CLEAN += symbols.c symbols.h *.d *.elf *.hex *.lst
+
+### Don't treat the .elf as intermediate
+.PRECIOUS: %.elf %.hex %.bin
+
+.PHONY: upload upload-softdevice erase-all recover size
+
+### Compilation rules
+CUSTOM_RULE_LINK=1
+
+%.elf: $(TARGET_STARTFILES) %.co $(PROJECT_OBJECTFILES) $(PROJECT_LIBRARIES) contiki-$(TARGET).a $(LDSCRIPT)
+	$(TRACE_LD)
+	$(Q)$(LD) $(LDFLAGS) ${filter-out $(LDSCRIPT) %.a,$^} ${filter %.a,$^} $(TARGET_LIBFILES) -o $@
+
+%.hex: %.elf
+	$(OBJCOPY) -O ihex $< $@
+
+%.bin: %.elf
+	$(OBJCOPY) $(OBJCOPY_FLAGS) $< $@
+
+%.lst: %.elf
+	$(OBJDUMP) $(OBJDUMP_FLAGS) $< > $@
+
+### We don't really need the .hex and .bin for the .$(TARGET) but let's make
+### sure they get built
+%.$(TARGET): %.elf %.hex %.bin
+	cp $< $@
+
+## Find out the size of the compiled file 
+size : 
+	$(SIZE) $(TARGET_SIZE)
+
+## Program device/Reset device
+upload: rm.jlink2 upload.jlink2 
+	@echo "Starting uploading"
+	$(JLINK) upload.jlink2
+	@echo "Done uploading"
+	
+rm.jlink2:
+	-rm -rf *.jlink
+		
+upload.jlink2:
+	echo "device nrf51822\nspeed 1000\nw4 4001e504 1\nloadbin $(PWD)/$(ARGS) $(FLASH_START_ADDRESS)\nr\ng\nqc\n" > upload.jlink
+
+%.jlink:
+	sed -e 's/#OUTPUT_FILENAME#/$*.hex/' $(CONTIKI_CPU)/flash.jlink > $@
+
+%.flash: %.hex %.jlink
+	@echo Flashing: $^
+	$(JLINK) $(JLINK_OPTS) -CommanderScript $*.jlink
+
+erase:
+	$(JLINK) $(JLINK_OPTS) -CommanderScript $(CONTIKI_CPU)/erase.jlink
+
+upload-softdevice: rm.jlink upload-softdevice.jlink2
+	@echo "Convert from hex to binary. Split original hex in two to avoid huge (>250 MB) binary file with just 0s. "
+	$(OBJCOPY) -Iihex -Obinary --remove-section .sec3 $(CONTIKI_CPU)/$(SOFTDEVICE) $(PWD)/_mainpart.bin
+	$(OBJCOPY) -Iihex -Obinary --remove-section .sec1 --remove-section .sec2 $(CONTIKI_CPU)/$(SOFTDEVICE) $(PWD)/_uicr.bin
+	$(JLINK) $(PWD)/upload-softdevice.jlink2
+
+upload-softdevice.jlink2:
+	@echo "Do magic. Write to NVMC to enable erase, do erase all and erase UICR, reset, enable writing, load mainpart bin, load uicr bin. Reset."
+	@echo " Resetting in between is needed to disable the protections. "
+	echo "w4 4001e504 1\nloadbin \"$(PWD)/_mainpart.bin\" 0\nloadbin \"$(PWD)/_uicr.bin\" 0x10001000\nr\ng\nexit\n" > $(PWD)/upload-softdevice.jlink2
+
+reset: reset.jlink2
+	$(JLINK) reset.jlink2
+
+reset.jlink2:
+	printf "r\ng\nexit\n" > reset.jlink2
+
+recover: pin-reset.jlink2
+	$(JLINK) pin-reset.jlink2
+
+pin-reset.jlink2:
+	echo "device nrf51822\nr\ng\nexit\n" > pin-reset.jlink2
+
+erase-all: erase-all.jlink2
+	$(JLINK) erase-all.jlink2
+
+erase-all.jlink2:
+	echo "device nrf51822\nw4 4001e504 2\nw4 4001e50c 1\nw4 4001e514 1\nr\nexit\n" > erase-all.jlink2
+
+

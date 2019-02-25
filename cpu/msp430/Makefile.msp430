@@ -1,0 +1,500 @@
+# $Id: Makefile.msp430,v 1.35 2011/01/19 07:30:31 adamdunkels Exp $
+
+ifdef nodeid
+CFLAGS += -DNODEID=$(nodeid)
+endif
+
+CFLAGS += -gstabs+
+
+.SUFFIXES:
+
+### Define the CPU directory
+CONTIKI_CPU=$(CONTIKI)/cpu/msp430
+
+### Define the source files we have in the MSP430 port
+
+ifndef CONTIKI_CPU_FAM_DIR
+ ifneq (,$(findstring msp430f1,$(MCU)))
+  CONTIKI_CPU_FAM_DIR = f1xxx
+ endif
+endif
+ifndef CONTIKI_CPU_FAM_DIR
+ ifneq (,$(findstring msp430f5,$(MCU)))
+  CONTIKI_CPU_FAM_DIR = f5xxx
+ endif
+endif
+ifndef CONTIKI_CPU_FAM_DIR
+ ifneq (,$(findstring msp430f2,$(MCU)))
+  CONTIKI_CPU_FAM_DIR = f2xxx f1xxx
+ endif
+endif
+ifndef CONTIKI_CPU_FAM_DIR
+ ${error Unhandled MSP430 family: "$(MCU)"}
+endif
+
+CONTIKI_CPU_DIRS = $(CONTIKI_CPU_FAM_DIR) . dev
+
+MSP430     = msp430.c flash.c clock.c leds.c leds-arch.c \
+             watchdog.c lpm.c rtimer-arch.c
+UIPDRIVERS = me.c me_tabs.c slip.c crc16.c
+ELFLOADER  = elfloader.c elfloader-msp430.c symtab.c
+
+ifndef CPU_HAS_MSP430X
+# include mtarch.c only in the non-large memory model case, because
+# the current implementation assumes 16-bit addresses (function pointers
+# stored as "unsigned short").
+MSP430 += mtarch.c
+endif
+
+ifeq ($(TARGET_MEMORY_MODEL),large)
+ELFLOADER = elfloader-msp430x.c symtab.c
+endif
+
+CONTIKI_TARGET_SOURCEFILES += $(MSP430) \
+                              $(SYSAPPS) $(ELFLOADER) \
+                              $(UIPDRIVERS)
+
+CONTIKI_SOURCEFILES        += $(CONTIKI_TARGET_SOURCEFILES)
+
+### Compiler definitions
+
+ifdef WERROR
+CFLAGSWERROR=-Werror
+endif
+
+ifdef IAR
+CC	 = icc430
+LD       = xlink
+AS       = iasm430
+AR       = xar
+OBJCOPY  = ielftool
+STRIP    = strip
+
+ifndef IAR_PATH
+# This works with cygwin...
+IAR_BIN_PATH := $(shell dirname "`which $(CC)`")
+IAR_PATH_C := $(shell dirname "$(IAR_BIN_PATH)")
+IAR_PATH := $(shell cygpath -m "$(IAR_PATH_C)")
+endif
+
+CFLAGS += --diag_suppress=Pa050 --silent
+
+#defaults on the MSP430X core include file here (xlfn.h)
+ifndef CFLAGSNO
+CFLAGSNO = --dlib_config "$(IAR_PATH)/LIB/DLIB/dl430xlfn.h" $(CFLAGSWERROR)
+# CFLAGSNO = --dlib_config $(IAR_PATH)/LIB/DLIB/dl430xlfn.h -Ohz --multiplier=32 --multiplier_location=4C0 --hw_workaround=CPU40 --core=430X $(CFLAGSWERROR) --data_model large --double=32
+endif
+
+LDFLAGSNO += -B -l contiki-$(TARGET).map -s __program_start
+# Stack and heap size in hex
+ifndef IAR_STACK_SIZE
+ IAR_STACK_SIZE=300
+endif
+# Set this to a positive number (hex) to enable malloc/free with IAR compiler
+ifndef IAR_DATA16_HEAP_SIZE
+ IAR_DATA16_HEAP_SIZE=100
+endif
+ifndef IAR_DATA20_HEAP_SIZE
+ IAR_DATA20_HEAP_SIZE=0
+endif
+LDFLAGSNO += -D_STACK_SIZE=$(IAR_STACK_SIZE) -D_DATA16_HEAP_SIZE=$(IAR_DATA16_HEAP_SIZE) -D_DATA20_HEAP_SIZE=$(IAR_DATA20_HEAP_SIZE)
+
+CUSTOM_RULE_C_TO_O = 1
+%.o: %.c
+	$(TRACE_CC)
+	$(Q)$(CC) $(CFLAGS) $< -o $@
+
+define FINALIZE_CYGWIN_DEPENDENCY
+sed -e 's/ \([A-Z]\):\\/ \/cygdrive\/\L\1\//' -e 's/\\/\//g' \
+	    <$(@:.o=.P) >$(@:.o=.d); \
+rm -f $(@:.o=.P)
+endef
+
+CUSTOM_RULE_C_TO_OBJECTDIR_O = 1
+$(OBJECTDIR)/%.o: %.c | $(OBJECTDIR)
+	$(TRACE_CC)
+	$(Q)$(CC) $(CFLAGS) $< --dependencies=m $(@:.o=.P) -o $@
+ifeq ($(HOST_OS),Windows)
+	@$(FINALIZE_CYGWIN_DEPENDENCY)
+endif
+
+CUSTOM_RULE_C_TO_CO = 1
+%.co: %.c
+	$(TRACE_CC)
+	$(Q)$(CC) $(CFLAGS) -DAUTOSTART_ENABLE $< -o $@
+
+AROPTS = -o
+
+else
+
+GCC      = 1
+CC       = msp430-gcc
+LD       = msp430-gcc
+AS       = msp430-as
+AR       = msp430-ar
+NM       = msp430-nm
+OBJCOPY  = msp430-objcopy
+STRIP    = msp430-strip
+BSL      = msp430-bsl
+
+# From version 4.6.x, mspgcc does not support generic MCU identifiers such as
+# msp430x1611 in contrast to msp430f1611
+ifndef CC_MCU
+ ifndef MSPGCC_VERSION
+  MSPGCC_VERSION := ${shell $(CC) -dumpversion}
+ endif
+endif
+ifndef CC_MCU
+ ifneq (,$(findstring 4.4.,$(MSPGCC_VERSION)))
+  CC_MCU := ${subst msp430f,msp430x,$(MCU)}
+ endif
+endif
+ifndef CC_MCU
+ ifneq (,$(findstring 3.2.,$(MSPGCC_VERSION)))
+  CC_MCU := ${subst msp430f,msp430x,$(MCU)}
+ endif
+endif
+ifndef CC_MCU
+ CC_MCU := $(MCU)
+endif
+
+### Checks for compiler version to enable 20-bit support
+ifndef IAR
+ifneq (,$(findstring 4.7.,$(shell msp430-gcc -dumpversion)))
+ifdef CPU_HAS_MSP430X
+ ifeq ($(TARGET_MEMORY_MODEL),large)
+  CFLAGS += -mmemory-model=$(TARGET_MEMORY_MODEL)
+  CFLAGS += -mcode-region=far -mdata-region=far -msr20 -mc20 -md20
+  LDFLAGS += -mmemory-model=$(TARGET_MEMORY_MODEL) -mcode-region=far -mdata-region=far -msr20 -mc20 -md20
+ else
+  TARGET_MEMORY_MODEL = medium
+  CFLAGS += -mmemory-model=$(TARGET_MEMORY_MODEL)
+  CFLAGS += -ffunction-sections -fdata-sections -mcode-region=any
+  LDFLAGS += -mmemory-model=$(TARGET_MEMORY_MODEL) -Wl,-gc-sections
+ endif
+endif
+endif
+endif
+
+ifndef CFLAGSNO
+CFLAGSNO = -Wall -mmcu=$(CC_MCU) $(CFLAGSWERROR)
+endif
+#CFLAGS  += -Os -fno-strict-aliasing #-g3 #-S -fverbose-asm #-save-temps
+CFLAGS  += -Os -fno-strict-aliasing 
+#LDFLAGS += -mmcu=$(CC_MCU) -Wl,-Map=contiki-$(TARGET).map
+LDFLAGS += -mmcu=$(CC_MCU) -Wl,-Map=contiki-$(TARGET).map -Wl,--section-start -Wl,.chaos_do_tx=0x4000 -Wl,--section-start -Wl,.chaos_do_rx=0x4800 -Wl,--section-start -Wl,.text=0x5500
+
+### These flags can reduce the code size and RAM usage with up to 10%
+ifeq ($(SMALL),1)
+CFLAGS += -ffunction-sections
+# CFLAGS += -fdata-sections
+LDFLAGS += -Wl,--gc-sections,--undefined=_reset_vector__,--undefined=InterruptVectors,--undefined=_copy_data_init__,--undefined=_clear_bss_init__,--undefined=_end_of_init__
+endif # SMALL
+
+endif # IAR
+
+CFLAGS  += $(CFLAGSNO)
+
+PROJECT_OBJECTFILES += ${addprefix $(OBJECTDIR)/,$(CONTIKI_TARGET_MAIN:.c=.o)}
+
+### Compilation rules
+
+%-stripped.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+	$(STRIP) --strip-unneeded -g -x $@
+
+%.cm: %.co
+	$(LD) -i -r --unresolved-symbols=ignore-in-object-files -mmsp430x149 -o $@ $^
+	$(STRIP) --strip-unneeded -g -x $@
+
+%-stripped.o: %.o
+	$(STRIP) --strip-unneeded -g -x -o $@ $<
+
+%.o: ${CONTIKI_TARGET}/loader/%.S
+	$(TRACE_AS)
+	$(Q)$(AS) -o $(notdir $(<:.S=.o)) $<
+
+%.firmware:	%.${TARGET}
+	mv $< $@
+
+ifdef IAR
+%.ihex: %.co $(PROJECT_OBJECTFILES) $(PROJECT_LIBRARIES) contiki-$(TARGET).a
+	$(LD) $(LDFLAGSNO) -Fintel-extended $(TARGET_STARTFILES) ${filter-out %.a,$^} ${filter %.a,$^} $(TARGET_LIBFILES) -o $@
+else
+%.ihex: %.$(TARGET)
+	$(OBJCOPY) $^ -O ihex $@
+	$(OBJCOPY) -O ihex $^ $*.ihex
+endif
+	
+$(CONTIKI)/tools/mspsim/build.xml:
+	@echo '----------------'
+	@echo 'Could not find the MSPSim build file. Did you run "git submodule update --init"?'
+	@echo '----------------'
+
+$(CONTIKI)/tools/mspsim/mspsim.jar: $(CONTIKI)/tools/mspsim/build.xml
+	(cd $(CONTIKI)/tools/mspsim && ant jar)
+
+%.mspsim:	%.${TARGET} ${CONTIKI}/tools/mspsim/mspsim.jar
+	java -jar ${CONTIKI}/tools/mspsim/mspsim.jar -platform=${TARGET} $<
+
+mspsim-maptable:	contiki-${TARGET}.map
+	java -classpath ${CONTIKI}/tools/mspsim/mspsim.jar se.sics.mspsim.util.MapTable $<
+
+core-labels.o: core.${TARGET}
+	${CONTIKI}/tools/msp430-make-labels core.${TARGET} > core-labels.S
+	$(AS) -o $@ core-labels.S
+#	cp core-labels.o app/
+
+core-globals.o: core.${TARGET}
+	${CONTIKI}/tools/msp430-make-globals core.${TARGET} > core-globals.S
+	$(AS) -o $@ core-globals.S
+
+loader-init.o: ${CONTIKI_TARGET}/loader/loader-init.S
+	$(AS) -o $(notdir $(<:.S=.o)) $<
+# 	cp loader-init.o build-app/
+
+ifdef CORE
+.PHONY: symbols.c symbols.h
+symbols.c:
+	$(NM) $(CORE) | awk -f $(CONTIKI)/tools/mknmlist > symbols.c
+else
+symbols.c symbols.h:
+	cp ${CONTIKI}/tools/empty-symbols.c symbols.c
+	cp ${CONTIKI}/tools/empty-symbols.h symbols.h
+endif
+
+OBJDUMP = msp430-objdump
+
+## default parameters
+dynamic?=0 #1: enable join module, 2: join stress test, 3: leader election
+log?=1 #enable the log module
+printf?=1 #enable printf
+logflags?=0 #include progress flags in the logs
+src?=1 #include src id in packet, 2: include a dummy src id for HW security to work and not break CI
+dst?=0 #include dst id in packet
+rank?=0 #include rank field in packet
+interval?=40 #chaos interval, unit is 100ms (40=4 seconds)
+ch?=26 #RF channel
+mch?=0 #channel hopping
+pch?=0 #parallel channels
+tx?=TXPW0 #tx power (0 is highest, 7 is lowest)
+site?=rennes #testbed
+initiator?=0xca73 #initiator node id
+duration?=5 #duration of the experiment on the testbed
+sync?=0 # 1: sync on every packet,  2: sync when app requests, 0: sync only on the first rx packet in the round
+user?='alnahas' #username for the testbed
+sec?=0 #HW security level: 0-disabled, 5-authentication with 2 bytes. - Compatible with 802.15.4
+description?=""
+failures?=0 # inject failures in vote, 2pc, 3pc with a probability of 1/failures
+max_node_count?=0
+election_to?=64 # leader election timeout in rounds. Each round loops on the channels for CHAOS_ASSOCIATION_HOP_CHANNEL_THERSHOLD times (2*16 by default, checking every channel twice on average)
+jamming?=0 #for ewsn competition
+
+CFLAGS += -D_param_join=$(dynamic)
+CFLAGS += -D_param_log=$(log)
+CFLAGS += -D_param_printf=$(printf)
+CFLAGS += -D_param_logflags=$(logflags)
+CFLAGS += -D_param_src=$(src)
+CFLAGS += -D_param_dst=$(dst)
+CFLAGS += -D_param_rank=$(rank)
+CFLAGS += -D_param_interval=$(interval)
+CFLAGS += -D_param_ch=$(ch)
+CFLAGS += -D_param_mch=$(mch)
+CFLAGS += -D_param_pch=$(pch)
+CFLAGS += -D_param_txpw=$(tx)
+CFLAGS += -D_param_sync=$(sync)
+CFLAGS += -D_param_sec=$(sec) #security level
+CFLAGS += -DINITIATOR_NODE=$(initiator)
+CFLAGS += -DFAILURES_RATE=$(failures)
+CFLAGS += -D_param_max_node_count=$(max_node_count)
+CFLAGS += -DCHAOS_LEADER_ELECTION_TIMEOUT=$(election_to)
+
+empty:=
+space:=$(empty) $(empty)
+#$(subst $(space),$(comma),$(foo))
+EXPERIMENT_PARAM_TMP=i$(initiator)_j$(dynamic)_lg$(log)_lf$(logflags)_sy$(sync)_sr$(src)_ds$(dst)_rnk$(rank)_itvl$(interval)_c$(ch)_mc$(mch)_pc$(pch)_sc$(sec)_tx$(tx)_f$(failures)_mn$(max_node_count)_to$(election_to)
+EXPERIMENT_PARAM=$(subst $(space),,$(EXPERIMENT_PARAM_TMP))
+
+%.hex: %.ihex
+	cp $*.ihex $*.hex
+	
+bytes: $(CONTIKI_PROJECT)
+	msp430-size $(CONTIKI_PROJECT).${TARGET}
+#	$(OBJDUMP) -h $(CONTIKI_PROJECT).sky | perl -ne '$$b{$$1}=hex $$2 if /^\s*\d+\s*\.(text|data|bss|chaos)\s+(\S+)/; END { printf("%16d bytes in ROM\n%16d bytes in RAM\n",$$b{text}+$$b{data},$$b{data}+$$b{bss}); }'
+	@echo '    ' `date`
+
+#motesdynamic: CFLAGS+=-DTESTBED=motes -DCOOJA=0
+#motesdynamic: bytes
+#	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).motesdynamic.sky
+	
+#flocklabdynamic: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DTESTBED=flocklab -DCOOJA=0
+#flocklabdynamic: bytes
+#	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).flocklabdynamic.sky
+
+#twistdynamic: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DWITH_TINYOS_FRAME=1 -DTESTBED=twist -DCOOJA=0
+#twistdynamic: bytes
+#	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).twistdynamic.exe
+	
+#indriyadynamic: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DWITH_TINYOS_FRAME=1 -DTESTBED=indriya -DCOOJA=0
+#indriyadynamic: bytes
+#	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).indriyadynamic.exe
+
+%.schedule:
+	python /Users/beshr/work/chaos-support/eval/iotlab-clitools/iotlab-helper.py schedule --site=$(site) --firmware=$*.hex --duration=$(duration) --run --user=$(user)
+	
+schedule-iotlab: 
+	make TARGET=wsn430 clean
+	make TARGET=wsn430 $(site)
+	python /Users/beshr/work/chaos-support/eval/iotlab-clitools/iotlab-helper.py schedule --site=$(site) --firmware=$(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)_$(site).ihex --duration=$(duration) --run --user=$(user)
+
+
+update-iotlab-nodes:
+	IOTLAB_MAPPING=$$(python /Users/beshr/work/chaos-support/eval/iotlab-clitools/iotlab-helper.py list make --site=$(site) --archi=wsn430:cc2420); echo "#define IOTLAB_MAPPING $${IOTLAB_MAPPING}" > iotlabnodes.h
+	cat iotlabnodes.h 
+	
+iotlab-fresh: update-iotlab-nodes
+	make TARGET=wsn430 clean
+	make TARGET=wsn430 iotlab 
+	
+rennes: CFLAGS+=-DTESTBED=rennes -DCOOJA=0
+
+rennes: bytes $(CONTIKI_PROJECT).ihex
+	cp $(CONTIKI_PROJECT).ihex $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)_rennes.ihex
+
+iotlab: CFLAGS+= -DTESTBED=iotlab -DCOOJA=0
+iotlab: bytes $(CONTIKI_PROJECT).ihex
+	cp $(CONTIKI_PROJECT).ihex $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)_iotlab.ihex
+		
+euratech: CFLAGS+=-DTESTBED=euratech -DCOOJA=0
+euratech: bytes $(CONTIKI_PROJECT).ihex
+	cp $(CONTIKI_PROJECT).ihex $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)_euratech.ihex
+
+rennes-motes: CFLAGS+=-DTESTBED=rennesmotes -DCOOJA=0
+rennes-motes: bytes $(CONTIKI_PROJECT).ihex
+	mv $(CONTIKI_PROJECT).ihex $(CONTIKI_PROJECT).motes.ihex
+		
+cooja-rennes: CFLAGS+=-DTESTBED=rennes -DCOOJA=1
+cooja-rennes: bytes $(CONTIKI_PROJECT).ihex
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja06.sky
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja32.sky
+				
+flocklab: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DTESTBED=flocklab -DCOOJA=0
+flocklab: bytes 
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM).flocklab.sky
+
+schedule-flocklab: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DTESTBED=flocklab -DCOOJA=0
+schedule-flocklab: bytes 
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM).flocklab.sky
+	python /Users/beshr/work/chaos-support/eval/flocklab-support/makeFlocklabTest.py $(CONTIKI_PROJECT).sky /Users/beshr/work/chaos-support/eval/flocklab-support/flocklab-config.xml $(duration) "$(description)_$(EXPERIMENT_PARAM)" "create-job"
+
+twist: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DWITH_TINYOS_FRAME=1 -DTESTBED=twist -DCOOJA=0
+twist: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).twist.exe
+	
+indriya: CFLAGS+= -DWITH_TINYOS_AUTO_IDS=1 -DWITH_TINYOS_FRAME=1 -DTESTBED=indriya -DCOOJA=0
+indriya: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).indriya.exe
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM).indriya.exe
+
+schedule-indriya: CFLAGS+= -DWITH_TINYOS_AUTO_IDS=1 -DWITH_TINYOS_FRAME=1 -DTESTBED=indriya -DCOOJA=0
+schedule-indriya: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).indriya.exe
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM).indriya.exe
+	sh /Users/beshr/work/chaos-support/eval/eval/indriya.sh --image $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM).indriya.exe --jobname "$(description)"
+		
+cooja-indriya: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DWITH_TINYOS_FRAME=1 -DCOOJA=1 -DTESTBED=indriya
+cooja-indriya: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).coojaindriya.sky	
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja06.sky
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja32.sky
+	
+#cooja-indriya-dynamic: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DWITH_TINYOS_FRAME=1 -DCOOJA=1 -DTESTBED=indriya
+#cooja-indriya-dynamic: bytes
+#	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).coojaindriya.sky	
+	
+cooja: CFLAGS+=-DCOOJA=1 -DWITH_TINYOS_AUTO_IDS=1 -DTESTBED=cooja
+cooja: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja06.sky
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja32.sky
+	
+#coojadynamic: CFLAGS+=-DCOOJA=1 -DTESTBED=cooja
+#coojadynamic: bytes
+#	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).coojadynamic.sky
+
+cooja02: CFLAGS+=-DCOOJA=1 -DCHAOS_NODES=2 -DTESTBED=cooja
+cooja02: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja02.sky
+	
+cooja06: CFLAGS+=-DCOOJA=1 -DCHAOS_NODES=6 -DTESTBED=cooja 
+cooja06: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja06.sky
+
+cooja06o: CFLAGS+=-DCOOJA=1 -DCHAOS_NODES=21 -DTESTBED=cooja
+cooja06o: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja06.sky
+
+cooja15: CFLAGS+=-DCOOJA=1 -DCHAOS_NODES=15 -DTESTBED=cooja
+cooja15: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja15.sky
+		
+cooja32: CFLAGS+=-DCOOJA=1 -DCHAOS_NODES=32 -DTESTBED=cooja
+cooja32: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja32.sky
+	
+cooja-tinyos06: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DCOOJA=1 -DCHAOS_NODES=6 -DTESTBED=cooja
+cooja-tinyos06: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja06.sky	
+
+cooja-tinyos32: CFLAGS+=-DWITH_TINYOS_AUTO_IDS=1 -DWITH_TINYOS_FRAME=1 -DCOOJA=1 -DCHAOS_NODES=32 -DTESTBED=cooja
+cooja-tinyos32: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja32.sky	
+			
+motes03: CFLAGS+=-DCHAOS_NODES=3 -DTESTBED=motes -DCOOJA=0
+motes03: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).motes03.sky
+	
+motes10: CFLAGS+=-DCHAOS_NODES=10 -DTESTBED=motes -DCOOJA=0
+motes10: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).motes10.sky
+	
+motes: CFLAGS+=-DTESTBED=motes -DCOOJA=0
+motes: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).motes.sky
+		
+motes-tinyos03: CFLAGS+=-DWITH_TINYOS_FRAME=1 -DCHAOS_NODES=3 -DTESTBED=motes -DCOOJA=0
+motes-tinyos03: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).motes-tinyos03.sky
+
+motes-tinyos: CFLAGS+=-DWITH_TINYOS_FRAME=1 -DTESTBED=motes -DCOOJA=0
+motes-tinyos: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).motes-tinyos.sky
+
+cooja-ewsn: CFLAGS+=-DTESTBED=ewsn -DCOOJA=1 -DDISABLE_LEDS=0
+cooja-ewsn: bytes
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT).cooja06.sky	
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)_coojaewsn.sky
+
+motes-ewsn: CFLAGS+=-DTESTBED=motes -DCOOJA=0 -DDISABLE_LEDS=1
+motes-ewsn: bytes $(CONTIKI_PROJECT).ihex $(CONTIKI_PROJECT).upload
+	cp $(CONTIKI_PROJECT).sky $(CONTIKI_PROJECT)_motes.sky
+	
+ewsn: CFLAGS+=-DTESTBED=ewsn -DCOOJA=0 -DDISABLE_LEDS=1
+ewsn: bytes $(CONTIKI_PROJECT).ihex
+	cp $(CONTIKI_PROJECT).ihex $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)_ewsn.ihex
+
+ewsn-schedule-log: CFLAGS+=-DTESTBED=ewsn -DCOOJA=0 -DDISABLE_LEDS=1	
+ewsn-schedule-log: bytes $(CONTIKI_PROJECT).ihex
+	cp $(CONTIKI_PROJECT).ihex $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)_ewsn.ihex
+	echo '{"description": "$(description) $(EXPERIMENT_PARAM)", "logs": true, "baudrate": 115200, "jamming": $(jamming), "name":"$(CONTIKI_PROJECT)", "duration": $(duration), "file": "$(shell cat $(CONTIKI_PROJECT).ihex|base64)"}'>$(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM).json
+	curl -H "Content-Type: application/json" -X POST -d @$(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM).json "https://iti-testbed.tugraz.at/api/queue/create_job?key=$(EWSN_APIKEY)"
+
+ewsn-schedule-nolog: CFLAGS+=-DTESTBED=ewsn -DCOOJA=0 -DDISABLE_LEDS=1	
+ewsn-schedule-nolog: bytes $(CONTIKI_PROJECT).ihex
+	cp $(CONTIKI_PROJECT).ihex $(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)_ewsn.ihex
+	echo '{"description": "$(description) $(EXPERIMENT_PARAM)", "logs": false, "baudrate": 115200, "jamming": $(jamming), "name":"$(CONTIKI_PROJECT)", "duration": $(duration), "file": "$(shell cat $(CONTIKI_PROJECT).ihex|base64)"}'>$(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM).json
+	curl -H "Content-Type: application/json" -X POST -d @$(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM).json "https://iti-testbed.tugraz.at/api/queue/create_job?key=$(EWSN_APIKEY)"
+
+
+cppcheck:
+	cppcheck --force --inline-suppr --template '{file}:{line},{severity},{id},{message}' -i "$(SOURCEDIRS)" $(SOURCEDIRS) >err.txt 2> err2.txt; more err2.txt
+#-q $(for b in $(for a in $(find "$(CONTIKI_SOURCEFILES)" | egrep '\.h$'); do dirname $a; dirname $(dirname $a); done | sort -u); do echo -n " -I $b"; done) 

@@ -1,0 +1,4 @@
+make two apps
+	app one: discovery: run it multiple times to discover neighborhood
+	app two: do the real collect based on slots
+
