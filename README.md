@@ -41,6 +41,13 @@ We borrow some code from [Coen Roest contiki-nRF51-port] (https://github.com/coe
 Under [examples/nrf-glossy](./blueflood/examples/nrf-glossy/).
 Main file and protocol logic: [examples/nrf-glossy/dirty-channel.c](./blueflood/examples/nrf-glossy/dirty-channel.c). 
 
+### Experiment logs and processing scripts
+Wired experiments for concurrent transmissions characterization on Bluetooth PHY: [examples/nrf-glossy/exp-logs](./blueflood/examples/nrf-glossy/exp-logs).
+
+Testbed experiments when running Blueflood: [examples/nrf-glossy/testbedjobscopy](./blueflood/examples/nrf-glossy/testbedjobscopy).
+
+Script used to process the logs and plot the results: [examples/nrf-glossy/ble-glossy-logs-scripts/process_plot_results.py](./blueflood/examples/nrf-glossy/ble-glossy-logs-scripts/process_plot_results.py).
+
 ## Use the code on HW
 
 You need to follow these steps:
@@ -68,7 +75,7 @@ make dirty-channel.flash
 #R /round number/, ID: /cpu ID/, master: /cpu id of the initiator/, tx power: /txpower in dBm/, channel number /n/= /frequency/ MHz (std), msg: /B/ bytes, mode: /BLE mode/, CE: /capture enabled or not/, @ /date and timestamp of the compilation of the firmware/
 ```
 
-4. Last, fill in the file testbed.h:
+4. Last, fill in the file [examples/nrf-glossy/testbed.h](./blueflood/examples/nrf-glossy/testbed.h):
 You need to define two lists one for *CPU IDs (TESTBED_IDS)* and one for the *node IDs (TESTBED_PI_IDS)*.
 You can define these two lists under the configuration item `TESTBED==HOME_TESTBED`, for example.
 Then, you need to use the configuration parameter `TESTBED=HOME_TESTBED` when you compile the firmware.
