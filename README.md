@@ -9,7 +9,7 @@ This repo hosts the source code of the BlueFlood protocol that we published in t
 Beshr Al Nahas, Simon Duquennoy and Olaf Landsiedel. 2019. 
 "Concurrent Transmissions for Multi-Hop Bluetooth 5". 
 _In Proceedings of the International Conference on Embedded Wireless Systems and Networks (EWSN)_.
-[paper](https://research.chalmers.se/en/publication/507874).
+[paper](https://research.chalmers.se/en/publication/507874), [talk](./examples/nrf-glossy/2019_02_27_ewsn_blueflood_github.pdf).
 
 ## Abstract
 
@@ -33,20 +33,20 @@ We support Nordic Semiconductor nRF52840 and the series nRF52x and nRF51x.
 
 ### Contiki port and platform drivers
 
-Under [platform/Core51822](./blueflood/platform/Core51822/), [platform/nrf52840dk](./blueflood/platform/nrf52840dk/), [cpu/arm/nrf51822](./blueflood/cpu/arm/nrf51822/) and [cpu/arm/nrf52x](./blueflood/cpu/arm/nrf52x/).
+Under [platform/Core51822](./platform/Core51822/), [platform/nrf52840dk](./platform/nrf52840dk/), [cpu/arm/nrf51822](./cpu/arm/nrf51822/) and [cpu/arm/nrf52x](./cpu/arm/nrf52x/).
 
-We borrow some code from [Coen Roest contiki-nRF51-port] (https://github.com/coenroest/contiki-nRF51-port).
+We borrow some code from [Coen Roest's contiki-nRF51-port](https://github.com/coenroest/contiki-nRF51-port).
 
 ### BlueFlood code
-Under [examples/nrf-glossy](./blueflood/examples/nrf-glossy/).
-Main file and protocol logic: [examples/nrf-glossy/dirty-channel.c](./blueflood/examples/nrf-glossy/dirty-channel.c). 
+Under [examples/nrf-glossy](./examples/nrf-glossy/).
+Main file and protocol logic: [examples/nrf-glossy/dirty-channel.c](./examples/nrf-glossy/dirty-channel.c). 
 
 ### Experiment logs and processing scripts
-Wired experiments for concurrent transmissions characterization on Bluetooth PHY: [examples/nrf-glossy/exp-logs](./blueflood/examples/nrf-glossy/exp-logs).
+Wired experiments for concurrent transmissions characterization on Bluetooth PHY: [examples/nrf-glossy/exp-logs](./examples/nrf-glossy/exp-logs).
 
-Testbed experiments when running Blueflood: [examples/nrf-glossy/testbedjobscopy](./blueflood/examples/nrf-glossy/testbedjobscopy).
+Testbed experiments when running Blueflood: [examples/nrf-glossy/testbedjobscopy](./examples/nrf-glossy/testbedjobscopy).
 
-Script used to process the logs and plot the results: [examples/nrf-glossy/ble-glossy-logs-scripts/process_plot_results.py](./blueflood/examples/nrf-glossy/ble-glossy-logs-scripts/process_plot_results.py).
+Script used to process the logs and plot the results: [examples/nrf-glossy/ble-glossy-logs-scripts/process_plot_results.py](./examples/nrf-glossy/ble-glossy-logs-scripts/process_plot_results.py).
 
 ## Use the code on HW
 
@@ -57,10 +57,10 @@ You need to follow these steps:
 You need to extract the *CPU IDs* which the code uses to identify different motes, then you need to make a list of the motes in the network, and give them numerical *node IDs* to refer to them in the rest of the configurations, and in the logs.
 For example, you need to specify the initiator node ID later, to define the coordinator of the network that starts the flood.
 
-To extract the CPU IDs, we compile, flash and the HELLOWORLD mode, which prints the configuration of the motes.
+To extract the CPU IDs, we compile and flash the HELLOWORLD mode, which prints the configuration of the motes.
 Note that the main C file and the resulting executable is called dirty-channel.
 
-1. Go to [examples/nrf-glossy](./blueflood/examples/nrf-glossy/) and compile using:
+1. Go to [examples/nrf-glossy](./examples/nrf-glossy/) and compile using:
 ```
 make clean && make all TESTBED=HELLOWORLD_TESTBED
 ```
@@ -75,7 +75,7 @@ make dirty-channel.flash
 #R /round number/, ID: /cpu ID/, master: /cpu id of the initiator/, tx power: /txpower in dBm/, channel number /n/= /frequency/ MHz (std), msg: /B/ bytes, mode: /BLE mode/, CE: /capture enabled or not/, @ /date and timestamp of the compilation of the firmware/
 ```
 
-4. Last, fill in the file [examples/nrf-glossy/testbed.h](./blueflood/examples/nrf-glossy/testbed.h):
+4. Last, fill in the file [examples/nrf-glossy/testbed.h](./examples/nrf-glossy/testbed.h):
 You need to define two lists one for *CPU IDs (TESTBED_IDS)* and one for the *node IDs (TESTBED_PI_IDS)*.
 You can define these two lists under the configuration item `TESTBED==HOME_TESTBED`, for example.
 Then, you need to use the configuration parameter `TESTBED=HOME_TESTBED` when you compile the firmware.
