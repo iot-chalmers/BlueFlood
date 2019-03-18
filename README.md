@@ -9,7 +9,7 @@ This repo hosts the source code of the BlueFlood protocol that we published in t
 Beshr Al Nahas, Simon Duquennoy and Olaf Landsiedel. 2019. 
 "Concurrent Transmissions for Multi-Hop Bluetooth 5". 
 _In Proceedings of the International Conference on Embedded Wireless Systems and Networks (EWSN)_.
-[paper](https://research.chalmers.se/en/publication/507874), [talk](./examples/nrf-glossy/2019_02_27_ewsn_blueflood_github.pdf).
+[paper](https://research.chalmers.se/en/publication/507874), [talk](./2019_02_27_ewsn_blueflood_github.pdf).
 
 ## Abstract
 
