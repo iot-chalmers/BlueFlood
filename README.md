@@ -95,14 +95,14 @@ Consult [GNU MCU Eclipse page](https://gnu-mcu-eclipse.github.io/toolchain/arm/i
 You need to modify the following variable in the Makefile in accordance to your installation:
 ```
 GCC_INSTALL_ROOT	:= ~/opt/gnu-mcu-eclipse/arm-none-eabi-gcc/7.2.1-1.1-20180401-0515
-GCC_VERSION			:= 7.2.1
-GCC_PREFIX			:= arm-none-eabi
+GCC_VERSION		:= 7.2.1
+GCC_PREFIX		:= arm-none-eabi
 ```
 
 #### Toolchain: Segger JLink
 
 To upload the program on the board, you need to install [Segger JLink](https://www.segger.com/downloads/jlink).
-If for some reasons it stll complains about JLink after installing it, redefine NRF_JLINK_PATH [here](./cpu/arm/nrf52x/Makefile.nrf52x#L76).
+If for some reasons it stll complains about JLink after installing it, redefine NRF_JLINK_PATH [here](./cpu/arm/nrf52x/Makefile.nrf52x#L79).
 
 #### Make parameters
 We have the following configuration parameters to specify in compile time, with the `make` command:
