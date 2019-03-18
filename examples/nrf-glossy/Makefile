@@ -1,5 +1,9 @@
 SHELL:=/bin/sh
 
+GCC_INSTALL_ROOT	:= ~/opt/gnu-mcu-eclipse/arm-none-eabi-gcc/7.2.1-1.1-20180401-0515
+GCC_VERSION			:= 7.2.1
+GCC_PREFIX			:= arm-none-eabi
+
 #UART_BAUDRATE_BAUDRATE_Baud115200=0x01D7E000 #/*!< 115200 baud (actual rate: 115942) */
 #UART_BAUDRATE_BAUDRATE_Baud230400=0x03AFB000 #/*!< 230400 baud (actual rate: 231884) */
 #UART_BAUDRATE_BAUDRATE_Baud250000=0x04000000 #/*!< 250000 baud */

@@ -84,6 +84,27 @@ Alternatively, fill under `TESTBED==WIRED_TESTBED` if you want to reproduce the 
 
 ### Configuring, compiling, flashing and running on motes
 
+#### Toolchain: Compiler
+To compile, you need to install the GCC compiler toolchain and tell the Makefile where to find it.
+
+<!-- We use [gcc-arm-none-eabi-7-2017-q4-major](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) -->
+For the compiler, we use [gcc-arm-none-eabi-7-2017-q4-major](https://github.com/gnu-mcu-eclipse/arm-none-eabi-gcc/releases).
+Download the binaries of this version of the compiler suitable to your system, then extract the archive on your system.
+Consult [GNU MCU Eclipse page](https://gnu-mcu-eclipse.github.io/toolchain/arm/install/) for help.
+
+You need to modify the following variable in the Makefile in accordance to your installation:
+```
+GCC_INSTALL_ROOT	:= ~/opt/gnu-mcu-eclipse/arm-none-eabi-gcc/7.2.1-1.1-20180401-0515
+GCC_VERSION			:= 7.2.1
+GCC_PREFIX			:= arm-none-eabi
+```
+
+#### Toolchain: Segger JLink
+
+To upload the program on the board, you need to install [Segger JLink](https://www.segger.com/downloads/jlink).
+If for some reasons it stll complains about JLink after installing it, redefine NRF_JLINK_PATH [here](./cpu/arm/nrf52x/Makefile.nrf52x#L76).
+
+#### Make parameters
 We have the following configuration parameters to specify in compile time, with the `make` command:
 ```
 TESTBED=WIRED_TESTBED #name of testbed configuration
@@ -98,6 +119,7 @@ ntx ?= 4 #how many TX repetitions after receiving the packet
 initiator?=0 #initiator node ID. Use an ID from the TESTBED_PI_IDS list.
 ```
 
+#### Make command examples
 Compile command example:
 ```
 make clean && make TESTBED=HOME_TESTBED tx_power=-16 capture=0 ble_mode=4 initiator=3 n_channels=40 
