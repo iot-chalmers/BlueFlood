@@ -1,0 +1,312 @@
+picocom v3.1
+
+port is        : /dev/tty.usbmodem0006838083821
+flowcontrol    : RTS/CTS
+baudrate is    : 115200
+parity is      : none
+databits are   : 8
+stopbits are   : 1
+escape is      : C-a
+local echo is  : no
+noinit is      : no
+noreset is     : no
+hangup is      : no
+nolock is      : no
+send_cmd is    : sz -vv
+receive_cmd is : rz -vv -E
+imap is        : lfcrlf,
+omap is        : 
+emap is        : crcrlf,delbs,
+logfile is     : none
+initstring     : none
+exit_after is  : not set
+exit is        : no
+
+!! Settings mismatch !! Type [C-a] [C-v] to see actual port settings
+Type [C-a] [C-h] to see available commands
+Terminal ready
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 694, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 696, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 698, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 700, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 702, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 704, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 706, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+#R 352, ID: 0x7475364d, master: 0x7475364d, tx power: 0 dBm, channel 37 = 2402 MHz (std), msg: 12 bytes, mode: Ble_1Mbit, CE: 0, @ Apr 25 2019 12:23:27
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 708, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 710, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 712, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 714, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 716, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 718, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 720, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 722, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 724, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 726, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 728, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 730, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 732, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 734, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 736, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 738, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 740, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 742, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 744, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 746, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 748, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 750, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 752, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 754, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 756, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 758, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 760, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 762, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 764, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 766, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 768, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 770, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+#R 384, ID: 0x7475364d, master: 0x7475364d, tx power: 0 dBm, channel 37 = 2402 MHz (std), msg: 12 bytes, mode: Ble_1Mbit, CE: 0, @ Apr 25 2019 12:23:27
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 772, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 774, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 776, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 778, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 780, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 782, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 784, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 786, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 788, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 790, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 792, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 794, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 796, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 798, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 800, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 802, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 804, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 806, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 808, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 810, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 812, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 814, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 816, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 818, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 820, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 822, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 824, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 826, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 828, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 830, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+rx_ok 0, crc 0, none 2, tx 2: OK 0 of 832, berr b0 p0 r0 0, sync 65535
+Rssi: 111, -127, -127, -127, -127, dB
+Ts delta: 0, 1, -17143, 1, -17143, ticks
+Tx status: :2A2A
+
+Terminating...
+Thanks for using picocom
