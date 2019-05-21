@@ -66,7 +66,7 @@ leds_arch_get(void){
 void
 leds_arch_set(uint8_t leds){
 	/* Invert the input since the LEDs are active low */
-	//leds = ~leds;
+	leds = ~leds;
 	nrf_gpio_pin_write(LEDS_CONF_GREEN,(leds & LEDS_GREEN));
 	nrf_gpio_pin_write(LEDS_CONF_BLUE,(leds & LEDS_BLUE));
 	nrf_gpio_pin_write(LEDS_CONF_RED,(leds & LEDS_RED));

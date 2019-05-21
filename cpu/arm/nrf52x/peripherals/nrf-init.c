@@ -69,9 +69,9 @@ gpiote_init (void)
 
   // Configure GPIOTE_CHANNEL_NUMBER to toggle the GPIO pin state with input.
   // @note Only one GPIOTE task can be coupled to an output pin.
-  nrf_gpiote_task_config (GPIOTE_CHANNEL_NUMBER, GPIO_OUTPUT_PIN_NUMBER,
-			  NRF_GPIOTE_POLARITY_TOGGLE,
-			  NRF_GPIOTE_INITIAL_VALUE_LOW);
+  // nrf_gpiote_task_config (GPIOTE_CHANNEL_NUMBER, GPIO_OUTPUT_PIN_NUMBER,
+	// 		  NRF_GPIOTE_POLARITY_TOGGLE,
+	// 		  NRF_GPIOTE_INITIAL_VALUE_LOW);
 }
 
 /**

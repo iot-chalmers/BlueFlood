@@ -26,7 +26,7 @@
 
 #define LEDS_CONF_CYAN 13
 
-#define LEDS_CONF_ALL	16
+#define LEDS_CONF_ALL	(13|14|15|16uL)
 
 /*---------------------------------------------------------------------------*/
 
