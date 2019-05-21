@@ -12,6 +12,7 @@ GCC_PREFIX			:= arm-none-eabi
 #UART_BAUDRATE_BAUDRATE_Baud1M=0x10000000 #/*!< 1Mega baud */
 
 UART_BR_CONF?=UART_BAUDRATE_BAUDRATE_Baud115200 #UART bitrate
+uartbr=115200
 
 Nrf_1Mbit=0 #/*!< 1 Mbit/s Nordic proprietary radio mode */
 Nrf_2Mbit=1 #/*!< 2 Mbit/s Nordic proprietary radio mode */
@@ -87,23 +88,28 @@ NRF_JLINK_SN=681471568
 endif
 ifeq ($(MOTE),20)
 NRF_JLINK_SN=683570809
+uart_device=tty.usbmodem0006835708091
 endif
 ifeq ($(MOTE),21)
 NRF_JLINK_SN=683808382
+uart_device=tty.usbmodem0006838083821
 endif
 ifeq ($(MOTE),22)
 NRF_JLINK_SN=683014029
+uart_device=tty.usbmodem0006830140291 
 endif
 ifeq ($(MOTE),23)
 NRF_JLINK_SN=683912157
 endif
 ifeq ($(MOTE),24)
 NRF_JLINK_SN=683378022
+uart_device=tty.usbmodem0006833780221
 endif
 
 SMALL=1
 
 all: $(CONTIKI_PROJECT)
+	cp $(CONTIKI_PROJECT).hex $(DATE)_$(EXPNAME).hex
 
 date:
 	echo "$(DATE)" $(COUNT_ACTIVE_NODES)
@@ -138,34 +144,38 @@ p23:
 p24:
 	make dirty-channel.flash MOTE=24
 
-log20:
+log21:
 	rm -f exp-logs/exp$(EXP).log
 	touch exp-logs/exp$(EXP).log
-	picocom -fh -b 230400 --imap lfcrlf /dev/tty.usbmodem142271 | tee exp-logs/exp$(EXP).log
+	picocom -fh -b $(uartbr) --imap lfcrlf /dev/tty.usbmodem0006838083821 | tee exp-logs/exp$(EXP).log
 	git add -f exp-logs/exp$(EXP).log
 	git commit -m"exp$(EXP).log"
+
+log:
+	picocom -fh -b $(uartbr) --imap lfcrlf /dev/${uart_device} | tee exp-logs/exp$(EXP).log
 
 program:
 	make dirty-channel.flash
 
 doall: clean all programall
 
-doallv5: clean all p20 p21 p22
+doallv5: clean all p20 p21 p22 p24 resetall
 
 compile: clean all
 
 reset20:
 	make reset MOTE=20
 
-reset22:
+resetall: 
+	make reset MOTE=20
+	make reset MOTE=21
 	make reset MOTE=22
+	make reset MOTE=24
 
-resetall: reset21 reset22 reset20
-
-log20timeout:
+log21timeout:
 	rm -f exp-logs/exp$(EXP).log
 	touch exp-logs/exp$(EXP).log
-	gtimeout -s ABRT --kill-after=$$((${DURATION}+2)) --foreground $(DURATION) picocom --noreset -fh -b 230400 --imap lfcrlf /dev/tty.usbmodem0006835708091 --logfile ./exp-logs/exp$(EXP).log	
+	gtimeout -s ABRT --kill-after=$$((${DURATION}+2)) --foreground $(DURATION) picocom --noreset -fh -b $(uartbr) --imap lfcrlf /dev/tty.usbmodem0006838083821 --logfile ./exp-logs/exp$(EXP).log	
 	git add -f exp-logs/exp$(EXP).log
 	git commit -m"exp$(EXP).log"
 
