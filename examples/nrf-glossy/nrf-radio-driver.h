@@ -1,6 +1,10 @@
 #ifndef _NRF_RADIO_DRIVER_H_
 #define _NRF_RADIO_DRIVER_H_
 
+#ifndef RADIO_TEST_TX_CARRIER
+#define RADIO_TEST_TX_CARRIER false
+#endif
+
 #define TRIGGER_RADIO_START_WITH_TIMER (true)
 #define NRF_RADIO_DEBUG_STATE true
 #define RADIO_REV_C_OR_RADIO_REV_1 false

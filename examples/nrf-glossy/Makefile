@@ -31,7 +31,7 @@ n_channels ?= 1 #how many channels to use. Up to 40.
 overrive_ch37 ?= 0 #use a special frequency for channel 37 to avoid Bluetooth traffic
 ntx ?= 4 #how many repititions
 initiator?=0 #initiator node ID
-
+test_mode_tx_carrier?=0 #do not tx/rx data, but transmit a constant unmodulated carrier (by keeping the radio in idle mode in slots instead of starting tx/rx)
 #unnecessary
 DURATION ?= 120 #duration of the experiment
 
@@ -54,7 +54,7 @@ CONTIKI_WITH_CHAOS = 0
 CONTIKI_WITH_IPV4 = 0
 CONTIKI_WITH_IPV6 = 0
 CONTIKI_WITH_RIME = 1
-CFLAGS += -DINITATOR_NODE_INDEX=$(initiator) -DUART_BAUDRATE=$(UART_BR_CONF) -DOVERRIDE_BLE_CHANNEL_37$(overrive_ch37) -DNTX=$(ntx) -DNUMBER_OF_CHANNELS=$(n_channels) -DPACKET_TEST_SIZE_CONF=$(packet_size) -DBLE_DEFAULT_RF_POWER=$(tx_power) -DTEST_CE=$(capture) -DRADIO_MODE_CONF=$(ble_mode) -DARTIFICIAL_TX_OFFSET=$(tx_offset)
+CFLAGS += -DRADIO_TEST_TX_CARRIER=$(test_mode_tx_carrier) -DINITATOR_NODE_INDEX=$(initiator) -DUART_BAUDRATE=$(UART_BR_CONF) -DOVERRIDE_BLE_CHANNEL_37$(overrive_ch37) -DNTX=$(ntx) -DNUMBER_OF_CHANNELS=$(n_channels) -DPACKET_TEST_SIZE_CONF=$(packet_size) -DBLE_DEFAULT_RF_POWER=$(tx_power) -DTEST_CE=$(capture) -DRADIO_MODE_CONF=$(ble_mode) -DARTIFICIAL_TX_OFFSET=$(tx_offset)
 
 #macros to remove spaces
 empty:=
@@ -65,7 +65,7 @@ space:=$(empty) $(empty)
 #save firmware with timestamp and parameters
 ##note: use := with the shell keyword to evaluate the expression on the first assignment
 DATE:=$(shell date +'%Y_%m_%d_%H_%M_%S')
-EXPERIMENT_PARAM_TMP:=_ble_mode_${ble_mode}_txpower_${tx_power}_txoffset_${tx_offset}_capture_${capture}_packet_size_${packet_size}_nch_${n_channels}_och_${overrive_ch37}_ntx_${ntx}_i_${initiator}
+EXPERIMENT_PARAM_TMP:=_ble_mode_${ble_mode}_txpower_${tx_power}_txoffset_${tx_offset}_capture_${capture}_packet_size_${packet_size}_nch_${n_channels}_och_${overrive_ch37}_ntx_${ntx}_i_${initiator}_testbed_${TESTBED_CONF}
 EXPERIMENT_PARAM:=$(subst $(space),,$(EXPERIMENT_PARAM_TMP))
 EXPNAME:=$(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)
 FIRMWARE_NAME:=$(DATE)_$(EXPNAME).elf

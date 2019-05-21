@@ -347,7 +347,7 @@ void my_radio_send(uint8_t* buf, int channel)
   NRF_RADIO->TASKS_TXEN = 1;		/* Enable the radio in TX mode */
   //while(NRF_RADIO->EVENTS_READY == 0U);	/* Wait for the radio to ramp up */
   //NRF_RADIO->TASKS_START = 1;		/* Start the transmission */
-  #if TRIGGER_RADIO_START_WITH_TIMER
+  #if TRIGGER_RADIO_START_WITH_TIMER && !RADIO_TEST_TX_CARRIER
     NRF_TIMER1->TASKS_START = 1;
   #endif
   //printf("DIRTY CHANNEL --- %u ---\n", channel);
@@ -382,7 +382,7 @@ uint8_t my_radio_rx(uint8_t* buf, int channel)
   NRF_RADIO->TASKS_RXEN = 1;		/* Enable the radio in TX mode */
   //while(NRF_RADIO->EVENTS_READY == 0U);	/* Wait for the radio to ramp up */
   //NRF_RADIO->TASKS_START = 1;		/* Start rx */
-  #if TRIGGER_RADIO_START_WITH_TIMER
+  #if TRIGGER_RADIO_START_WITH_TIMER && !RADIO_TEST_TX_CARRIER
     NRF_TIMER1->TASKS_START = 1;
   #endif
   //printf("Listen --- %u ---\n", channel);
