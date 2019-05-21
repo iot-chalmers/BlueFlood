@@ -19,7 +19,7 @@
 #define TEST_HELLO_WORLD (TESTBED==HELLOWORLD_TESTBED)
 //test CT with two nodes, where each node sends alone for 10 rounds to measure individual links
 #define TWO_NODES_EXPERIMENT (TESTBED==WIRED_TESTBED)
-enum {MSG_TURN_BROADCAST=0xff, MSG_TURN_NONE=0};
+enum {MSG_TURN_BROADCAST=0xff, MSG_TURN_NONE=0xfe};
 //put the node in sleep forever - for the testbed // do not enable this for normal use. This disables the mote.
 #define TEST_SLEEP_NODE_FOREVER 0
 #if TEST_SLEEP_NODE_FOREVER
@@ -98,6 +98,13 @@ static void init_ibeacon_packet(ble_beacon_t *pkt, const uint8_t* uuid, uint16_t
   pkt->pdu_header = 0x42; //pdu type: 0x02 ADV_NONCONN_IND, rfu 0, rx 0, tx 1 //2;
   pkt->adv_address_low=MY_ADV_ADDRESS_LOW;
   pkt->adv_address_hi=MY_ADV_ADDRESS_HI;
+  memcpy(pkt->uuid, uuid, sizeof(pkt->uuid));
+  pkt->round = round;
+  //pkt->minor = 0;
+  pkt->slot = slot;
+  pkt->turn = MSG_TURN_NONE;
+
+  #if (PACKET_IBEACON_FORMAT)
   pkt->ad_flags_length = 2; //2bytes flags
   pkt->ad_flags_type = 1; //1=flags
   pkt->ad_flags_data = 6; //(non-connectable, undirected advertising, single-mode device)
@@ -105,12 +112,8 @@ static void init_ibeacon_packet(ble_beacon_t *pkt, const uint8_t* uuid, uint16_t
   pkt->ad_type = 0xff; //manufacturer specific
   pkt->company_id = 0x004cU; //Apple ID
   pkt->beacon_type = 0x1502;//0x0215U; //proximity ibeacon
-  memcpy(pkt->uuid, uuid, sizeof(pkt->uuid));
-  pkt->round = round;
-  //pkt->minor = 0;
-  pkt->slot = slot;
-  pkt->turn = 0;
   pkt->power = 0;//256 - 60; //RSSI = -60 dBm; Measured Power = 256 – 60 = 196 = 0xC4
+  #endif
 }
 /*---------------------------------------------------------------------------*/
 /* Checks if the current time has passed a ref time + offset. Assumes
@@ -166,6 +169,10 @@ PROCESS_THREAD(tx_process, ev, data)
     my_radio_init(&my_id, my_tx_buffer);
     my_index = get_testbed_index(my_id, testbed_ids, TESTBED_SIZE);
     init_ibeacon_packet(&msg, &uuids_array[0][0], round, slot);
+    //put radio in tx idle mode to send continuous carrier
+    #if RADIO_TEST_TX_CARRIER
+    my_radio_send(my_tx_buffer, BLE_DEFAULT_CHANNEL);
+    #endif
     while(1){
       printf("#@ %s, ID: 0x%lx, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s), idx %d\n", 
       FIRMWARE_TIMESTAMP_STR, my_id, tx_node_id, (int8_t)BLE_DEFAULT_RF_POWER, BLE_DEFAULT_CHANNEL, 2400u+ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL], OVERRIDE_BLE_CHANNEL_37 ? "not std" : "std", my_index);
@@ -188,6 +195,7 @@ PROCESS_THREAD(tx_process, ev, data)
   #endif
 
   my_radio_init(&my_id, my_tx_buffer);
+  // leds_off(LEDS_ALL);
   my_index = get_testbed_index(my_id, testbed_ids, TESTBED_SIZE);
   init_ibeacon_packet(&msg, &uuids_array[0][0], round, slot);
   watchdog_periodic();
@@ -218,17 +226,30 @@ PROCESS_THREAD(tx_process, ev, data)
         msg.slot = slot;
         msg.round = round;
 
-        #if TWO_NODES_EXPERIMENT
+        #if 0 //TWO_NODES_EXPERIMENT
         if(IS_INITIATOR()){
-          int turn;
-          turn = (join_round == UINT16_MAX || join_round == -1) ? -1 : ((round - join_round)/10 + 1); 
-          if(turn <= 0 || turn == my_index + 1){
-            turn=1+1; //give turn to node 1 by default
-          } else if(turn > TESTBED_SIZE){
-            turn = MSG_TURN_BROADCAST;
+          static int turn;
+          if(join_round == UINT16_MAX || join_round == -1){
+            turn=(my_index + 1) % TESTBED_SIZE;
           } else {
-            //msg.turn = turn;
+            if(round - join_round >= 10 && (turn == (my_index + 1) % TESTBED_SIZE)){
+              turn=((turn+1) % TESTBED_SIZE);
+            } else if(round - join_round >= 20 && (turn == (my_index + 2) % TESTBED_SIZE) ){
+              turn = MSG_TURN_BROADCAST;
+            } else {
+              turn = MSG_TURN_BROADCAST;
+            }
           }
+          // turn = (join_round == UINT16_MAX || join_round == -1) ? -1 : ((round - join_round)/10); 
+          // turn=(turn % TESTBED_SIZE) +1 ; //give turn to node 1 by default
+
+          // if(turn <= 0 || turn == my_index + 1){
+          //   turn=(turn+1 % TESTBED_SIZE) +1; //give turn to node 1 by default
+          // } else if(turn > TESTBED_SIZE){
+          //   turn = MSG_TURN_BROADCAST;
+          // } else {
+          //   //msg.turn = turn;
+          // }
           msg.turn = turn;
         } else {
           if(msg.turn != MSG_TURN_BROADCAST){
@@ -329,7 +350,7 @@ PROCESS_THREAD(tx_process, ev, data)
                 round = rx_pkt->round;
                 sync_slot = slot;
                 t_start_round = get_rx_ts() - TX_CHAIN_DELAY - slot * SLOT_LEN;
-                my_turn = (rx_pkt->turn == my_index + 1) || (rx_pkt->turn == MSG_TURN_BROADCAST);
+                my_turn = (rx_pkt->turn == my_index) || (rx_pkt->turn == MSG_TURN_BROADCAST);
                 #if 0
                 printf("pkt: ");
                 for(i=0; i<sizeof(my_rx_buffer); i++){
@@ -499,8 +520,8 @@ PROCESS_THREAD(tx_process, ev, data)
     memset(my_rx_buffer, 0, msg.radio_len);
 
     if(round % 32 == 0){
-      printf("#R %u, ID: 0x%lx, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s), msg: %d bytes, mode: %s, CE: %d, @ %s\n", 
-              round, my_id, tx_node_id, (int8_t)BLE_DEFAULT_RF_POWER, BLE_DEFAULT_CHANNEL, 2400u+ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL], OVERRIDE_BLE_CHANNEL_37 ? "not std" : "std", sizeof(ble_beacon_t), RADIO_MODE_TO_STR(RADIO_MODE_CONF), TEST_CE, FIRMWARE_TIMESTAMP_STR);
+      printf("#R %u, ID: 0x%lx %d, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s), msg: %d bytes, mode: %s, CE: %d, @ %s\n", 
+              round, my_id, my_index, tx_node_id, (int8_t)BLE_DEFAULT_RF_POWER, BLE_DEFAULT_CHANNEL, 2400u+ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL], OVERRIDE_BLE_CHANNEL_37 ? "not std" : "std", sizeof(ble_beacon_t), RADIO_MODE_TO_STR(RADIO_MODE_CONF), TEST_CE, FIRMWARE_TIMESTAMP_STR);
     }
     round++;
     init_ibeacon_packet(&msg, &uuids_array[0][0], round, slot);

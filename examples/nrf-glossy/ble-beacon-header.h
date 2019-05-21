@@ -2,11 +2,17 @@
 #define BLE_BEACON_HEADER_H
 
 #ifdef PACKET_TEST_SIZE_CONF
-#define SIZE_OF_UUID (PACKET_TEST_SIZE_CONF-22)
+  #if ((PACKET_TEST_SIZE_CONF) > 22)
+  #define SIZE_OF_UUID ((PACKET_TEST_SIZE_CONF)-22)
+  #else 
+  #define SIZE_OF_UUID MAX(((PACKET_TEST_SIZE_CONF)-12),0)
+  #endif /*(PACKET_TEST_SIZE_CONF > 22)*/
 #else
 #define SIZE_OF_UUID (16)
-#endif
+#endif /* PACKET_TEST_SIZE_CONF */
+#define PACKET_IBEACON_FORMAT (!defined(PACKET_TEST_SIZE_CONF) || (PACKET_TEST_SIZE_CONF > 22))
 
+#if (PACKET_IBEACON_FORMAT)
 typedef struct __attribute__((packed)) ble_beacon_struct {
   uint8_t pdu_header; //S0
   uint8_t radio_len; //LEN
@@ -41,4 +47,25 @@ typedef struct __attribute__((packed)) ble_beacon_struct {
   };
   uint8_t power;
 } ble_beacon_t;
+#else
+typedef struct __attribute__((packed)) ble_beacon_struct {
+  uint8_t pdu_header; //S0
+  uint8_t radio_len; //LEN
+
+  uint32_t adv_address_low;
+  uint16_t adv_address_hi;
+  uint8_t uuid[SIZE_OF_UUID];
+  union{
+    uint16_t major;
+    uint16_t round;
+  };
+  union{
+    uint16_t minor;
+    struct{
+      uint8_t slot;
+      uint8_t turn;
+    };
+  };
+} ble_beacon_t;
+#endif
 #endif /* BLE_BEACON_HEADER_H */
