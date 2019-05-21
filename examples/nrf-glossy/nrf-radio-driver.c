@@ -426,10 +426,10 @@ output_radio_events_gpio_init(void)
                                         (RADIO_RXEN_PIN << GPIOTE_CONFIG_PSEL_Pos) | 
                                         (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
 
-  NRF_GPIOTE->CONFIG[RADIO_PAYLOAD_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) | 
-                                        (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) | 
-                                        (RADIO_PAYLOAD_PIN << GPIOTE_CONFIG_PSEL_Pos) | 
-                                        (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
+  // NRF_GPIOTE->CONFIG[RADIO_PAYLOAD_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) | 
+  //                                       (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) | 
+  //                                       (RADIO_PAYLOAD_PIN << GPIOTE_CONFIG_PSEL_Pos) | 
+  //                                       (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
 
   //Link radio events to GPIOTE
   NRF_PPI->CH[RADIO_ADDRESS_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_ADDRESS;
@@ -442,8 +442,8 @@ output_radio_events_gpio_init(void)
   NRF_PPI->CH[RADIO_DISABLED_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_DISABLED;
   NRF_PPI->CH[RADIO_DISABLED_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_READY_EVENT_GPIOTE_CH];
 
-  NRF_PPI->CH[RADIO_PAYLOAD_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_PAYLOAD;
-  NRF_PPI->CH[RADIO_PAYLOAD_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_PAYLOAD_GPIOTE_CH];
+  // NRF_PPI->CH[RADIO_PAYLOAD_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_PAYLOAD;
+  // NRF_PPI->CH[RADIO_PAYLOAD_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_PAYLOAD_GPIOTE_CH];
 
   NRF_PPI->CH[RADIO_T0_TX_EVENT_PPI_CH].EEP = (uint32_t)&NRF_TIMER0->EVENTS_COMPARE[0];
   NRF_PPI->CH[RADIO_T0_TX_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_TXEN_GPIOTE_CH];
@@ -451,7 +451,7 @@ output_radio_events_gpio_init(void)
   NRF_PPI->CH[RADIO_T0_RX_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_RXEN_GPIOTE_CH];
 
   //Enable PPI channels
-  NRF_PPI->CHEN |= (1 << RADIO_READY_EVENT_PPI_CH) | (1 << RADIO_DISABLED_EVENT_PPI_CH) | (1 << RADIO_PAYLOAD_EVENT_PPI_CH) | (1 << RADIO_ADDRESS_EVENT_PPI_CH) | (1 << RADIO_END_EVENT_PPI_CH);
+  NRF_PPI->CHEN |= (1 << RADIO_READY_EVENT_PPI_CH) | (1 << RADIO_DISABLED_EVENT_PPI_CH) /*| (1 << RADIO_PAYLOAD_EVENT_PPI_CH)*/ | (1 << RADIO_ADDRESS_EVENT_PPI_CH) | (1 << RADIO_END_EVENT_PPI_CH);
   #endif
 }
 /*---------------------------------------------------------------------------*/

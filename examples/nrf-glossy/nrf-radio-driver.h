@@ -199,11 +199,12 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
                                   (RADIO_PACKET_MAX_LEN << RADIO_PCNF1_MAXLEN_Pos))                                
 /*---------------------------------------------------------------------------*/
 /* Output radio state on GPIO */
-#define RADIO_ADDRESS_EVENT_PIN         12UL // address --> end      LED3
-#define RADIO_READY_EVENT_PIN           13UL // ready   --> disabled LED4
-#define RADIO_TXEN_PIN           14UL // txen --> disabled
-#define RADIO_RXEN_PIN           15UL // rxen --> disabled
-#define RADIO_PAYLOAD_PIN           16UL // payload
+#define PORT(P,PIN)                     (P*32uL+PIN)
+#define RADIO_ADDRESS_EVENT_PIN         PORT(1,10) // address --> end      
+#define RADIO_READY_EVENT_PIN           PORT(1,11) // ready   --> disabled
+#define RADIO_TXEN_PIN                  PORT(1,12) // txen --> disabled
+#define RADIO_RXEN_PIN                  PORT(1,13) // rxen --> disabled
+// #define RADIO_PAYLOAD_PIN            PORT(1,14) // payload
 
 // Peripheral channel assignments
 #define RADIO_ADDRESS_EVENT_GPIOTE_CH   0UL //PPI
@@ -217,7 +218,7 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 #define RADIO_READY_EVENT_PPI_CH        2UL
 #define RADIO_T0_TX_EVENT_PPI_CH     3UL
 #define RADIO_T0_RX_EVENT_PPI_CH     4UL
-#define RADIO_PAYLOAD_EVENT_PPI_CH     5UL
+// #define RADIO_PAYLOAD_EVENT_PPI_CH     5UL
 #define RADIO_DISABLED_EVENT_PPI_CH 6UL
 
 #define TIMER0C0_TIMER1_START_PPI_CH 7UL
