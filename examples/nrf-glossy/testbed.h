@@ -4,6 +4,7 @@
 #define IOTLAB_SACLAY 2
 #define WIRED_TESTBED 3
 #define HELLOWORLD_TESTBED 4
+#define EXT_TESTBED_LSB 5
 
 #ifndef INITATOR_NODE_INDEX
 #define INITATOR_NODE_INDEX 0 //node 2
@@ -23,10 +24,33 @@
 #define TESTBED_PI_IDS (uint8_t[]){1,2,3,4,5,6,7,8,9,10}
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
 
+#elif TESTBED==EXT_TESTBED_LSB
+
+#define TESTBED_IDS (uint32_t[]){0x30a1f91b, 0xa5bb378d, 0x53486dc5, 0x05838afd, 0x87748c61, \ 
+                                0x9bd0657d, 0xc184d1d6, 0xa6a0dac7, 0x14aeccfb, 0xfb424437, \ 
+                                0x0ef20233, 0xbd3b390c, 0xd29516a8, 0xe41838b8, 0xc53a20ee}
+#define TESTBED_PI_IDS (uint8_t[]){1,2,3,4,5,6,8,9,10,11,12,13,14,15,16}
+#define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
+
 #elif TESTBED==WIRED_TESTBED
 
-#define TESTBED_IDS (uint32_t[]){0x724d2a67UL, 0x7475364dUL, 0x74231ca7UL}
-#define TESTBED_PI_IDS (uint8_t[]){20,21,22}
+#define mote4  (0x7b150560UL)
+#define mote5  (0xddf8a17fUL)
+#define mote6  (0x8e28b37dUL)
+#define mote7  (0x1c30a5f9UL)
+#define mote8  (0x70f96a53UL)
+#define mote28  (0x2fa5d86eUL)
+/* 52840 boards */
+#define pi10     (0x5cfdb15UL)
+#define mote20  (0x724d2a67UL)
+#define mote21  (0x7475364dUL)
+#define mote22  (0x74231ca7UL)
+#define mote24  (0xef70521UL)
+
+//#define TESTBED_IDS (uint32_t[]){0x7b150560UL, 0xddf8a17fUL, 0x8e28b37dUL, 0x1c30a5f9UL, 0x70f96a53UL, 0x5cfdb15UL, 0x724d2a67UL, 0x7475364dUL, 0x74231ca7UL, 0x2fa5d86eUL}
+//#define TESTBED_PI_IDS (uint8_t[]){4,5,6,7,8,10,20,21,22,28}
+#define TESTBED_IDS (uint32_t[]){mote20,mote21,mote22,mote24}
+#define TESTBED_PI_IDS (uint8_t[]){20,21,22,24} 
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
 
 #elif TESTBED==HELLOWORLD_TESTBED
