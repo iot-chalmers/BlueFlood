@@ -345,16 +345,17 @@ PROCESS_THREAD(tx_process, ev, data)
       } else if(do_rx){
         do{
           static int join_trial = 0;
-          uint8_t got_payload_event=0, got_address_event=0;
+          uint8_t got_payload_event=0, got_address_event=0, got_end_event = 0;
           int channel=0;
           if(!joined){ /* slave bootstrap code */
             int r=0, s=0;
             /* hop the channel when we have waited long enough on one channel: 2*N/(NTX/2) rounds */
             if( (join_trial % (MAX(12,2*NUMBER_OF_CHANNELS)/NTX) == 0)){
               s=random_rand();
-              channel=GET_CHANNEL(r,s);
+              // channel=GET_CHANNEL(r,s);
               join_trial++;
             }
+            channel=GET_CHANNEL(r,s);
             my_radio_rx(my_rx_buffer, channel);
             //my_radio_off_completely();
             rtimer_clock_t to = 2UL*ROUND_PERIOD+random_rand()%ROUND_PERIOD;
@@ -382,7 +383,8 @@ PROCESS_THREAD(tx_process, ev, data)
             // volatile bool crc_status_ok = (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk);
             // last_crc_is_ok = radio_ended && crc_status_ok;
             last_rx_ok = NRF_RADIO->EVENTS_PAYLOAD;
-            got_payload_event=NRF_RADIO->EVENTS_PAYLOAD || NRF_RADIO->EVENTS_END;
+            got_payload_event=NRF_RADIO->EVENTS_PAYLOAD;
+            got_end_event = NRF_RADIO->EVENTS_END;
             last_crc_is_ok = USE_HAMMING_CODE || ((NRF_RADIO->EVENTS_END != 0U) && (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk));
             //last_rx_ok = NRF_RADIO->EVENTS_PAYLOAD && last_crc_is_ok;
             // if(NRF_RADIO->CRCSTATUS != RADIO_CRCSTATUS_CRCSTATUS_CRCOk) printf("f crc\n");
@@ -427,23 +429,18 @@ PROCESS_THREAD(tx_process, ev, data)
               }
             }
           }
-          /* if the radio got stuck in bootstrap mode, then turn it off and on again */
-          if(!joined && got_address_event && !got_payload_event){
-            nrf_gpio_pin_clear(PORT(0,13));
-            // my_radio_off_completely();
+
+          /* if the radio got stuck in bootstrap mode, then turn it off and on again. it is needed when we get a crc error */
+          if(!joined){
             NRF_RADIO->EVENTS_DISABLED = 0U;
             /* Disable radio */
             NRF_RADIO->TASKS_DISABLE = 1U;
-            nrf_gpio_pin_clear(PORT(0,14));
-            while(NRF_RADIO->EVENTS_DISABLED == 0U);
-            nrf_gpio_pin_set(PORT(0,14));
+            BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_DISABLED != 0U, RX_SLOT_LEN);
             NRF_RADIO->EVENTS_DISABLED = 0U;
             NRF_RADIO->EVENTS_END = 0U;
             NRF_RADIO->EVENTS_ADDRESS = 0U;
             NRF_RADIO->EVENTS_PAYLOAD = 0U;
             NRF_RADIO->EVENTS_READY = 0U;
-            // my_radio_rx(my_rx_buffer, channel);
-            nrf_gpio_pin_set(PORT(0,13));
           }
         } while(!joined);
 
