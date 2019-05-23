@@ -122,7 +122,7 @@ initiator?=0 #initiator node ID. Use an ID from the TESTBED_PI_IDS list.
 #### Make command examples
 Compile command example:
 ```
-make clean && make TESTBED=HOME_TESTBED tx_power=-16 capture=0 ble_mode=4 initiator=3 n_channels=40 
+make clean && make TESTBED_CONF=HOME_TESTBED tx_power=-16 capture=0 ble_mode=4 initiator=3 n_channels=40 
 ```
 
 To program the connected mote:
