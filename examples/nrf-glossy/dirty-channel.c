@@ -227,6 +227,11 @@ PROCESS_THREAD(tx_process, ev, data)
   init_ibeacon_packet(&msg, &uuids_array[0][0], round, slot);
   watchdog_periodic();
 
+  if(IS_INITIATOR()){
+    // BUSYWAIT_UNTIL(0, RTIMER_SECOND);
+    nrf_delay_ms(1000);
+  }
+
   tt = RTIMER_NOW();
   t_start_round = tt;
   joined = 0;
@@ -239,11 +244,6 @@ PROCESS_THREAD(tx_process, ev, data)
   #if ROUND_ROBIN_INITIATOR
   initiator_node_index = INITATOR_NODE_INDEX;
   #endif
-
-  if(IS_INITIATOR()){
-    // BUSYWAIT_UNTIL(0, RTIMER_SECOND);
-    nrf_delay_ms(1000);
-  }
 
   while(1)
   {
@@ -622,25 +622,28 @@ PROCESS_THREAD(tx_process, ev, data)
       watchdog_periodic();
     }
   #else
-    printf("going to sleep\n");
-    /* Put the scheduled time in a compare register */
-    NRF_TIMER0->CC[SCHEDULE_REG] = t_start_round;
-    /* Enable the interrupt handler */
-    
-    NVIC_EnableIRQ(TIMER0_IRQn);
-    /* Set the scheduled flag */
-    roundtimer_scheduled = true;
-    do {
-      watchdog_periodic();
-      /* go to sleep mode */
-      __SEV();
-      __WFE();			
-      __WFE();	
-    } while(!roundtimer_scheduled);
-    /* we get back here after wakeup */
-    roundtimer_scheduled = false;
+    // rtimer_clock_t ticks = (t_start_round - RTIMER_NOW()) * 1uL<<16 / 16000000;
 
-  #endif
+  // printf("going to sleep\n");
+    void rtc_schedule(uint16_t ticks);
+    rtc_schedule(1);
+    watchdog_periodic();
+    /* go to sleep mode */
+    __SEV();
+    __WFE();
+    __WFE();
+    /* turn LEDs off: active low, so set the pins */
+
+    // nrf_gpio_pin_clear(PORT(0,14));
+    //correct the round timer based on the sleep time, because timer0 was sleeping
+    t_start_round -= 125000*16;
+    NRF_TIMER0->CC[0] = t_start_round-1000;
+    while (!NRF_TIMER0->EVENTS_COMPARE[0])
+    {
+      watchdog_periodic();
+    }
+    // nrf_gpio_pin_set(PORT(0,14));
+#endif
 
   }
 
@@ -648,3 +651,45 @@ PROCESS_THREAD(tx_process, ev, data)
 }
 /*---------------------------------------------------------------------------*/
 
+void rtc_schedule(uint16_t ticks)
+{
+  /* Set prescaler so that TICK freq is CLOCK_SECOND */
+  NRF_RTC1->PRESCALER = 4095;
+  NRF_RTC1->TASKS_CLEAR=1;
+  NRF_RTC1->CC[1]=ticks;
+  /* Enable comapre event and compaer interrupt */
+  NRF_RTC1->EVTENSET      = RTC_EVTENSET_COMPARE1_Msk;;
+  NRF_RTC1->INTENSET      = RTC_INTENSET_COMPARE1_Msk;
+
+  /* Enable Interrupt for RTC1 in the core */
+  NVIC_SetPriority(RTC1_IRQn, 3);
+  NVIC_EnableIRQ(RTC1_IRQn);
+  NRF_RTC1->TASKS_START = 1;
+
+}
+
+/** \brief Function for handling the RTC1 interrupts.
+ * If the \ref TICKLESS is TRUE then the interrupt sources can be
+ * either the counter overflow or counter compare. When overflow
+ * occurs \ref seconds_ovr variable can be updated so that the seconds
+ * passed can be read. When counter compare interrupt occurs the
+ * etimer expiration has occurred and etimer poll must be called.
+ * \n If \ref TICKLESS is FALSE then the interrupt will occur every tick
+ * of RTC. Here the current clock and \ref current_seconds are
+ * updated. Also the etimer expiration is checked every time and
+ * etimer poll is called if expiration has occurred.
+ *
+ */
+void RTC1_IRQHandler()
+{
+  // nrf_gpio_pin_toggle(PORT(0,13));
+  if(NRF_RTC1->EVENTS_COMPARE[1] == 1){
+    NRF_RTC1->EVENTS_COMPARE[1] = 0;
+    // Disable COMPARE1 event and COMPARE1 interrupt:
+    NRF_RTC1->EVTENCLR      = RTC_EVTENSET_COMPARE1_Msk;
+    NRF_RTC1->INTENCLR      = RTC_INTENSET_COMPARE1_Msk;
+    //printf("poll\n");
+    NRF_RTC1->TASKS_STOP = 1;
+  }
+
+}

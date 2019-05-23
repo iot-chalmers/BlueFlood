@@ -12,11 +12,11 @@
  * File containing the functions which call the nrf51822's clock implementation of Contiki
  *  \author prithvi
  */
-
+#include "nrf.h"
 #include "clock-nrf.h"
 #include "sys/clock.h"
 #include "nrf-delay.h"
-
+#include "dev/leds.h"
 /**
  * \brief nrf51822 specific the Contiki clock initialization with RTC1.
  *
@@ -31,7 +31,7 @@ clock_init(void)
 {
   hfclk_xtal_init();
   lfclk_init();
-  rtc_init();
+  // rtc_init();
 }
 
 /**

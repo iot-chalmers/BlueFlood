@@ -121,6 +121,7 @@ hfclk_xtal_deinit(void)
  * and initializes the overflow interrupt if \ref TICKLESS is TRUE,
  * else initializes the counter tick interrupt
  */
+#if 0
 void
 rtc_init(void)
 {
@@ -144,6 +145,53 @@ rtc_init(void)
   NRF_RTC1->TASKS_START = 1;
 
 }
+
+/** \brief Function for handling the RTC1 interrupts.
+ * If the \ref TICKLESS is TRUE then the interrupt sources can be
+ * either the counter overflow or counter compare. When overflow
+ * occurs \ref seconds_ovr variable can be updated so that the seconds
+ * passed can be read. When counter compare interrupt occurs the
+ * etimer expiration has occurred and etimer poll must be called.
+ * \n If \ref TICKLESS is FALSE then the interrupt will occur every tick
+ * of RTC. Here the current clock and \ref current_seconds are
+ * updated. Also the etimer expiration is checked every time and
+ * etimer poll is called if expiration has occurred.
+ *
+ */
+void
+RTC1_IRQHandler()
+{
+  if(TICKLESS){
+	  if(NRF_RTC1->EVENTS_OVRFLW == 1){
+		  NRF_RTC1->EVENTS_OVRFLW = 0;
+		  seconds_ovr++;
+	  }
+	  if(NRF_RTC1->EVENTS_COMPARE[1] == 1){
+		  NRF_RTC1->EVENTS_COMPARE[1] = 0;
+		  // Disable COMPARE1 event and COMPARE1 interrupt:
+		  NRF_RTC1->EVTENCLR      = RTC_EVTENSET_COMPARE1_Msk;
+		  NRF_RTC1->INTENCLR      = RTC_INTENSET_COMPARE1_Msk;
+		  //printf("poll\n");
+		  etimer_request_poll();
+	  }
+  }else{
+      NRF_RTC1->EVENTS_TICK = 0;
+	  current_clock++;
+
+	  if(etimer_pending()){
+		if(etimer_next_expiration_time() <= current_clock) {
+		  etimer_request_poll();
+		  /* printf("%d,%d\n", clock_time(),etimer_next_expiration_time   ()); */
+		}
+	  }
+
+	  if(--second_countdown == 0) {
+		current_seconds++;
+		second_countdown = CLOCK_SECOND;
+	  }
+  }
+}
+#endif
 
 /** \brief Function to return the number of ticks of the clock
  *  \return The current clock time
@@ -206,51 +254,7 @@ nrf_clock_update_expiration_time(clock_time_t expiration_time)
   NRF_RTC1->EVENTS_COMPARE[1] = 0;
 }
 
-/** \brief Function for handling the RTC1 interrupts.
- * If the \ref TICKLESS is TRUE then the interrupt sources can be
- * either the counter overflow or counter compare. When overflow
- * occurs \ref seconds_ovr variable can be updated so that the seconds
- * passed can be read. When counter compare interrupt occurs the
- * etimer expiration has occurred and etimer poll must be called.
- * \n If \ref TICKLESS is FALSE then the interrupt will occur every tick
- * of RTC. Here the current clock and \ref current_seconds are
- * updated. Also the etimer expiration is checked every time and
- * etimer poll is called if expiration has occurred.
- *
- */
-void
-RTC1_IRQHandler()
-{
-  if(TICKLESS){
-	  if(NRF_RTC1->EVENTS_OVRFLW == 1){
-		  NRF_RTC1->EVENTS_OVRFLW = 0;
-		  seconds_ovr++;
-	  }
-	  if(NRF_RTC1->EVENTS_COMPARE[1] == 1){
-		  NRF_RTC1->EVENTS_COMPARE[1] = 0;
-		  // Disable COMPARE1 event and COMPARE1 interrupt:
-		  NRF_RTC1->EVTENCLR      = RTC_EVTENSET_COMPARE1_Msk;
-		  NRF_RTC1->INTENCLR      = RTC_INTENSET_COMPARE1_Msk;
-		  //printf("poll\n");
-		  etimer_request_poll();
-	  }
-  }else{
-      NRF_RTC1->EVENTS_TICK = 0;
-	  current_clock++;
 
-	  if(etimer_pending()){
-		if(etimer_next_expiration_time() <= current_clock) {
-		  etimer_request_poll();
-		  /* printf("%d,%d\n", clock_time(),etimer_next_expiration_time   ()); */
-		}
-	  }
-
-	  if(--second_countdown == 0) {
-		current_seconds++;
-		second_countdown = CLOCK_SECOND;
-	  }
-  }
-}
 
 /**
  * @}

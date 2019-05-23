@@ -131,7 +131,7 @@ see4:
 	picocom -fh -b 230400 --imap lfcrlf /dev/tty.usbmodem1422541
 
 programext:
-	make dirty-channel.flash MOTE=100
+	#make dirty-channel.flash MOTE=100
 	ls -db /Volumes/DAPLINK*/ | gxargs -n 1 -d '\n' cp dirty-channel.hex 
 
 programall:

@@ -202,7 +202,7 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 #define PORT(P,PIN)                     (P*32uL+PIN)
 #define RADIO_ADDRESS_EVENT_PIN         PORT(1,10) // address      
 // #define RADIO_READY_EVENT_PIN           PORT(1,11) // disabled
-#define ROUND_INDICATOR_PIN           PORT(0,16) // disabled
+#define ROUND_INDICATOR_PIN           PORT(1,11) 
 
 #define RADIO_TXEN_PIN                  PORT(1,12) // txen 
 #define RADIO_RXEN_PIN                  PORT(1,13) // rxen 
