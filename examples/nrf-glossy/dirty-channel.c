@@ -14,17 +14,8 @@
 #include "encode-decode-hamming-crc24.h"
 
 #include "testbed.h"
-
-//minimal hello_world for extracting node IDs
-#define TEST_HELLO_WORLD (TESTBED==HELLOWORLD_TESTBED)
-//test CT with two nodes, where each node sends alone for 10 rounds to measure individual links
-#define TWO_NODES_EXPERIMENT (TESTBED==WIRED_TESTBED)
-enum {MSG_TURN_BROADCAST=0xff, MSG_TURN_NONE=0xfe};
-//put the node in sleep forever - for the testbed // do not enable this for normal use. This disables the mote.
-#define TEST_SLEEP_NODE_FOREVER 0
-#if TEST_SLEEP_NODE_FOREVER
 #include "nrf-gpio.h"
-#endif
+
 /*---------------------------------------------------------------------------*/
 /* Log config */
 #define TESTBED_LOG_STYLE (TESTBED!=WIRED_TESTBED)
@@ -43,10 +34,8 @@ enum {MSG_TURN_BROADCAST=0xff, MSG_TURN_NONE=0xfe};
 #endif
 /*---------------------------------------------------------------------------*/
 #define HEXC(c) (((c) & 0xf) <= 9 ? ((c) & 0xf) + '0' : ((c) & 0xf) + 'a' - 10)
-#define tx_node_id        (TESTBED_IDS[INITATOR_NODE_INDEX])
 #define MY_ADV_ADDRESS_LOW 0xbababa00UL /* HACK: keep the LSB set to 0 because the BLE long-range HW mode on this board seems to be setting this byte to zero after reception while keeping CRC ok (or another SW bug) */
 #define MY_ADV_ADDRESS_HI 0xB0B0U
-#define IS_INITIATOR() (my_id == tx_node_id)
 /*---------------------------------------------------------------------------*/
 #define IBEACON_SIZE  (sizeof(ble_beacon_t))
 #define BLUETOOTH_BEACON_PDU(S) (8+(S))
@@ -67,6 +56,15 @@ enum {MSG_TURN_BROADCAST=0xff, MSG_TURN_NONE=0xfe};
 /*---------------------------------------------------------------------------*/
 const uint8_t uuids_array[UUID_LIST_LENGTH][16] = UUID_ARRAY;
 const uint32_t testbed_ids[] = TESTBED_IDS;
+enum {MSG_TURN_BROADCAST=0xff, MSG_TURN_NONE=0xfe};
+/*---------------------------------------------------------------------------*/
+#if ROUND_ROBIN_INITIATOR
+volatile uint8_t initiator_node_index = INITATOR_NODE_INDEX;
+#define tx_node_id        (TESTBED_IDS[initiator_node_index])
+#else
+#define tx_node_id        (TESTBED_IDS[INITATOR_NODE_INDEX])
+#endif /* ROUND_ROBIN_INITIATOR */
+#define IS_INITIATOR() (my_id == tx_node_id)
 /*---------------------------------------------------------------------------*/
 static uint8_t my_tx_buffer[255] = {0};
 static uint8_t my_rx_buffer[255] = {0};
@@ -96,8 +94,8 @@ static int get_testbed_index(uint32_t my_id, const uint32_t *testbed_ids, uint8_
 static void init_ibeacon_packet(ble_beacon_t *pkt, const uint8_t* uuid, uint16_t round, uint16_t slot){
   pkt->radio_len = sizeof(ble_beacon_t)-2; /* len + pdu_header */ //length of the rest of the packet
   pkt->pdu_header = 0x42; //pdu type: 0x02 ADV_NONCONN_IND, rfu 0, rx 0, tx 1 //2;
-  pkt->adv_address_low=MY_ADV_ADDRESS_LOW;
-  pkt->adv_address_hi=MY_ADV_ADDRESS_HI;
+  pkt->adv_address_low = MY_ADV_ADDRESS_LOW;
+  pkt->adv_address_hi = MY_ADV_ADDRESS_HI;
   memcpy(pkt->uuid, uuid, sizeof(pkt->uuid));
   pkt->round = round;
   //pkt->minor = 0;
@@ -136,6 +134,26 @@ check_timer_miss(rtimer_clock_t ref_time, rtimer_clock_t offset, rtimer_clock_t 
     return now_has_overflowed;
   }
 }
+/*---------------------------------------------------------------------------*/
+#if !BLUEFLOOD_BUSYWAIT
+static int roundtimer_scheduled = false;
+
+void TIMER0_IRQHandler()
+{
+  /* Check if this is a compare event and not an overflow */
+  if (NRF_TIMER0->EVENTS_COMPARE[SCHEDULE_REG] == 1) {
+    /* Reset the compare event */
+    NRF_TIMER0->EVENTS_COMPARE[SCHEDULE_REG] = 0;
+    if (roundtimer_scheduled) {
+      NVIC_DisableIRQ(TIMER0_IRQn);
+    } else {
+
+    }
+  } /* else it is overflow */
+  // else
+  //   printf("OVERFLOW\n\r");
+}
+#endif
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(tx_process, ev, data)
 {
@@ -184,16 +202,25 @@ PROCESS_THREAD(tx_process, ev, data)
       FIRMWARE_TIMESTAMP_STR, my_id, tx_node_id, (int8_t)BLE_DEFAULT_RF_POWER, BLE_DEFAULT_CHANNEL, 2400u+ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL], OVERRIDE_BLE_CHANNEL_37 ? "not std" : "std");
       watchdog_periodic();
       __disable_irq(); // __enable_irq()
-      nrf_gpio_range_cfg_output(0,31);
+      // nrf_gpio_range_cfg_output(0,31);
+
+      nrf_gpio_cfg_input(PORT(0,8), NRF_GPIO_PIN_NOPULL); //UART RX
+      nrf_gpio_cfg_output(PORT(0,6)); //UART TX
+      nrf_gpio_pin_clear(PORT(0,6));
+
+      testbed_cofigure_pins();
+  
       //Enter System-on idle mode
-      __WFE();
+      // __WFE();
       __SEV();
       __WFE();			
+      __WFE();	
       //Enter System-off
       NRF_POWER->SYSTEMOFF = 1;
     }
   #endif
 
+  testbed_cofigure_pins();
   my_radio_init(&my_id, my_tx_buffer);
   // leds_off(LEDS_ALL);
   my_index = get_testbed_index(my_id, testbed_ids, TESTBED_SIZE);
@@ -204,6 +231,20 @@ PROCESS_THREAD(tx_process, ev, data)
   t_start_round = tt;
   joined = 0;
   join_round = UINT16_MAX;
+
+  #if !BLUEFLOOD_BUSYWAIT
+  roundtimer_scheduled = false;
+  #endif
+
+  #if ROUND_ROBIN_INITIATOR
+  initiator_node_index = INITATOR_NODE_INDEX;
+  #endif
+
+  if(IS_INITIATOR()){
+    // BUSYWAIT_UNTIL(0, RTIMER_SECOND);
+    nrf_delay_ms(1000);
+  }
+
   while(1)
   {
     rx_ok = 0, rx_crc_failed = 0, rx_none = 0; tx_done=0; berr = 0; berr_per_pkt_max = 0, berr_per_byte_max = 0; corrupt_msg_index = 0;
@@ -212,14 +253,26 @@ PROCESS_THREAD(tx_process, ev, data)
     synced = 0;
     sync_slot = UINT16_MAX;
     my_turn = 0;
+
     #if (TESTBED==WIRED_TESTBED)
     #define ROUND_LEN_RULE (((!IS_INITIATOR()) && synced && (slot < ROUND_LEN)) || ((IS_INITIATOR() || !synced) && (slot < ROUND_LEN)) )
     #else
     #define ROUND_LEN_RULE (((!IS_INITIATOR()) && synced && (slot < sync_slot + ROUND_LEN)) || ((IS_INITIATOR() || !synced) && (slot < 2*ROUND_LEN)) )
-    #endif
+    #endif /* TESTBED==WIRED_TESTBED */
+
+    #if ROUND_ROBIN_INITIATOR
+    if(joined){
+      initiator_node_index = round % TESTBED_SIZE;
+    } else {
+      initiator_node_index = INITATOR_NODE_INDEX;
+    } 
+    #endif /* ROUND_ROBIN_INITIATOR */
+
     for(slot = 1; ROUND_LEN_RULE; slot++){
       tt = t_start_round + slot * SLOT_LEN;
-      do_tx = (IS_INITIATOR() && !rx_ok && (slot % 2)) || (!IS_INITIATOR() && synced && (slot > 1) && my_turn);
+      // do_tx = (IS_INITIATOR() && !rx_ok && (slot % 2)) || (!IS_INITIATOR() && synced && (slot > 1) && my_turn);
+      do_tx = (IS_INITIATOR()) || (!IS_INITIATOR() && synced && (slot > 1) && my_turn);
+
       //do_tx = my_id == tx_node_id;
       do_rx = !do_tx;
       if(do_tx){
@@ -277,6 +330,7 @@ PROCESS_THREAD(tx_process, ev, data)
         if(!NRF_TIMER0->EVENTS_COMPARE[0]){
           tx_status[slot] = 'T';
         } else {
+          nrf_gpio_pin_set(ROUND_INDICATOR_PIN);
           BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_END != 0U, RX_SLOT_LEN);
           if(!NRF_RADIO->EVENTS_END){
             tx_status[slot] = 'R';
@@ -291,16 +345,18 @@ PROCESS_THREAD(tx_process, ev, data)
       } else if(do_rx){
         do{
           static int join_trial = 0;
-          if(!joined){
-            int r=0, s=0, channel=0;
+          uint8_t got_payload_event=0, got_address_event=0;
+          int channel=0;
+          if(!joined){ /* slave bootstrap code */
+            int r=0, s=0;
             /* hop the channel when we have waited long enough on one channel: 2*N/(NTX/2) rounds */
-            if(join_trial % (MAX(12,2*NUMBER_OF_CHANNELS)/NTX) == 0){
+            if( (join_trial % (MAX(12,2*NUMBER_OF_CHANNELS)/NTX) == 0)){
               s=random_rand();
               channel=GET_CHANNEL(r,s);
               join_trial++;
             }
-            my_radio_off_completely();
             my_radio_rx(my_rx_buffer, channel);
+            //my_radio_off_completely();
             rtimer_clock_t to = 2UL*ROUND_PERIOD+random_rand()%ROUND_PERIOD;
             BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0UL, to);
             r++; s++;
@@ -310,11 +366,13 @@ PROCESS_THREAD(tx_process, ev, data)
             rtimer_clock_t target_time = tt - ADDRESS_EVENT_T_TX_OFFSET - guard_time;
             schedule_rx_abs(my_rx_buffer, GET_CHANNEL(round,slot), target_time);
             BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, SLOT_LEN);
+            nrf_gpio_pin_set(ROUND_INDICATOR_PIN);
             //todo: remove RX_SLOT_LEN/2
             BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0U, 2*ADDRESS_EVENT_T_TX_OFFSET + guard_time);
           }
+          got_address_event=NRF_RADIO->EVENTS_ADDRESS;
 
-          if(!NRF_RADIO->EVENTS_ADDRESS) {
+          if(!got_address_event) {
             last_rx_ok = 0;
             // printf("no rx\n");
           } else {
@@ -324,6 +382,7 @@ PROCESS_THREAD(tx_process, ev, data)
             // volatile bool crc_status_ok = (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk);
             // last_crc_is_ok = radio_ended && crc_status_ok;
             last_rx_ok = NRF_RADIO->EVENTS_PAYLOAD;
+            got_payload_event=NRF_RADIO->EVENTS_PAYLOAD || NRF_RADIO->EVENTS_END;
             last_crc_is_ok = USE_HAMMING_CODE || ((NRF_RADIO->EVENTS_END != 0U) && (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk));
             //last_rx_ok = NRF_RADIO->EVENTS_PAYLOAD && last_crc_is_ok;
             // if(NRF_RADIO->CRCSTATUS != RADIO_CRCSTATUS_CRCSTATUS_CRCOk) printf("f crc\n");
@@ -367,6 +426,24 @@ PROCESS_THREAD(tx_process, ev, data)
                 joined = 1;
               }
             }
+          }
+          /* if the radio got stuck in bootstrap mode, then turn it off and on again */
+          if(!joined && got_address_event && !got_payload_event){
+            nrf_gpio_pin_clear(PORT(0,13));
+            // my_radio_off_completely();
+            NRF_RADIO->EVENTS_DISABLED = 0U;
+            /* Disable radio */
+            NRF_RADIO->TASKS_DISABLE = 1U;
+            nrf_gpio_pin_clear(PORT(0,14));
+            while(NRF_RADIO->EVENTS_DISABLED == 0U);
+            nrf_gpio_pin_set(PORT(0,14));
+            NRF_RADIO->EVENTS_DISABLED = 0U;
+            NRF_RADIO->EVENTS_END = 0U;
+            NRF_RADIO->EVENTS_ADDRESS = 0U;
+            NRF_RADIO->EVENTS_PAYLOAD = 0U;
+            NRF_RADIO->EVENTS_READY = 0U;
+            // my_radio_rx(my_rx_buffer, channel);
+            nrf_gpio_pin_set(PORT(0,13));
           }
         } while(!joined);
 
@@ -432,6 +509,8 @@ PROCESS_THREAD(tx_process, ev, data)
       }
     }
     my_radio_off_completely();
+    nrf_gpio_pin_clear(ROUND_INDICATOR_PIN);
+
     rx_ok_total += rx_ok;
     berr_total += berr;
     rx_failed_total += rx_crc_failed + rx_none;
@@ -538,12 +617,34 @@ PROCESS_THREAD(tx_process, ev, data)
       round_is_late = check_timer_miss(t_start_round, ROUND_PERIOD-TIMER_GUARD, now);
       t_start_round += ROUND_PERIOD;
     }
-
+  
+  #if BLUEFLOOD_BUSYWAIT
     /* wait at the end of the round */
     NRF_TIMER0->CC[0] = t_start_round;
     while(!NRF_TIMER0->EVENTS_COMPARE[0]){
       watchdog_periodic();
     }
+  #else
+    printf("going to sleep\n");
+    /* Put the scheduled time in a compare register */
+    NRF_TIMER0->CC[SCHEDULE_REG] = t_start_round;
+    /* Enable the interrupt handler */
+    
+    NVIC_EnableIRQ(TIMER0_IRQn);
+    /* Set the scheduled flag */
+    roundtimer_scheduled = true;
+    do {
+      watchdog_periodic();
+      /* go to sleep mode */
+      __SEV();
+      __WFE();			
+      __WFE();	
+    } while(!roundtimer_scheduled);
+    /* we get back here after wakeup */
+    roundtimer_scheduled = false;
+
+  #endif
+
   }
 
   PROCESS_END();

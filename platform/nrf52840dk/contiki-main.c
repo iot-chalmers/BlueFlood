@@ -43,8 +43,8 @@ main(void)
   simple_uart_init();
 
   /* Testing of the basic peripherals */
-  leds_blink();
-  printf("\rTesting\n\r");
+  //leds_blink();
+  printf("\rTesting\n\rNode 0x%lx\n\r", NRF_FICR->DEVICEID[0]);
 
 #if WITH_TINYOS_AUTO_IDS
   node_id = TOS_NODE_ID;

@@ -1,13 +1,32 @@
 #ifndef _TESTBED_H_
 #define _TESTBED_H_
+
+/* testbeds definitions */
 #define HOME_TESTBED 1
 #define IOTLAB_SACLAY 2
 #define WIRED_TESTBED 3
 #define HELLOWORLD_TESTBED 4
 #define EXT_TESTBED_LSB 5
+#define EXT_TESTBED_TABLE 6
+
+//minimal hello_world for extracting node IDs
+#define TEST_HELLO_WORLD (TESTBED==HELLOWORLD_TESTBED)
+//test CT with two nodes, where each node sends alone for 10 rounds to measure individual links
+#define TWO_NODES_EXPERIMENT (TESTBED==WIRED_TESTBED)
+
+/* Put the node in sleep forever: for disabling nodes after jobs are done in the testbed. 
+* Do not enable this for normal use. This disables the mote.
+*/
+#ifndef TEST_SLEEP_NODE_FOREVER
+#define TEST_SLEEP_NODE_FOREVER 0
+#endif
+
+#ifndef ROUND_ROBIN_INITIATOR
+#define ROUND_ROBIN_INITIATOR 0
+#endif
 
 #ifndef INITATOR_NODE_INDEX
-#define INITATOR_NODE_INDEX 0 //node 2
+#define INITATOR_NODE_INDEX 0 
 #endif
 
 #if TESTBED==HOME_TESTBED
@@ -31,6 +50,13 @@
                                 0x0ef20233, 0xbd3b390c, 0xd29516a8, 0xe41838b8, 0xc53a20ee}
 #define TESTBED_PI_IDS (uint8_t[]){1,2,3,4,5,6,8,9,10,11,12,13,14,15,16}
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
+
+#elif TESTBED==EXT_TESTBED_TABLE
+
+#define TESTBED_IDS (uint32_t[]){0x4da8f2cb, 0x7c2757b3}
+#define TESTBED_PI_IDS (uint8_t[]){1,2}
+#define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
+
 
 #elif TESTBED==WIRED_TESTBED
 

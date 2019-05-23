@@ -96,6 +96,7 @@ rtimer_clock_t rtimer_arch_now (void)
  * If an rtimer task is scheduled then the interrupt is disabled and
  * rtimer's next run function is called.
  */
+#if BLUEFLOOD_BUSYWAIT
 void
 TIMER0_IRQHandler ()
 {
@@ -105,15 +106,16 @@ TIMER0_IRQHandler ()
       /* Reset the compare event */
       NRF_TIMER0->EVENTS_COMPARE[SCHEDULE_REG] = 0;
       if (rtimer_scheduled)
-	{
-	  NVIC_DisableIRQ (TIMER0_IRQn);
-	  rtimer_scheduled = false;
-	  rtimer_run_next ();
-	}
+      {
+        NVIC_DisableIRQ (TIMER0_IRQn);
+        rtimer_scheduled = false;
+        rtimer_run_next ();
+      }
     } /* else it is overflow */
-  else
-    printf("OVERFLOW\n\r");
+  // else
+  //   printf("OVERFLOW\n\r");
 }
+#endif
 /**
  * @}
  */

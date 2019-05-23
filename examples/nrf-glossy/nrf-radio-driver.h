@@ -200,10 +200,12 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 /*---------------------------------------------------------------------------*/
 /* Output radio state on GPIO */
 #define PORT(P,PIN)                     (P*32uL+PIN)
-#define RADIO_ADDRESS_EVENT_PIN         PORT(1,10) // address --> end      
-#define RADIO_READY_EVENT_PIN           PORT(1,11) // ready   --> disabled
-#define RADIO_TXEN_PIN                  PORT(1,12) // txen --> disabled
-#define RADIO_RXEN_PIN                  PORT(1,13) // rxen --> disabled
+#define RADIO_ADDRESS_EVENT_PIN         PORT(1,10) // address      
+// #define RADIO_READY_EVENT_PIN           PORT(1,11) // disabled
+#define ROUND_INDICATOR_PIN           PORT(0,16) // disabled
+
+#define RADIO_TXEN_PIN                  PORT(1,12) // txen 
+#define RADIO_RXEN_PIN                  PORT(1,13) // rxen 
 // #define RADIO_PAYLOAD_PIN            PORT(1,14) // payload
 
 // Peripheral channel assignments
@@ -263,4 +265,5 @@ void schedule_tx_t_from_rx(uint8_t* buf, int channel, rtimer_clock_t t);
 void schedule_tx_abs(uint8_t* buf, int channel, rtimer_clock_t t_abs);
 /* TX after t ticks from now */
 void schedule_tx(uint8_t* buf, int channel, rtimer_clock_t t);
+void testbed_cofigure_pins();
 #endif /* _NRF_RADIO_DRIVER_H_ */
