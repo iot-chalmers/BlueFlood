@@ -20,8 +20,10 @@
 /* Log config */
 #define TESTBED_LOG_STYLE (TESTBED!=WIRED_TESTBED)
 #define PRINT_TS_DELTA true
-#define PRINT_RSSI true
+#define PRINT_RSSI false
 #define PRINT_LAST_RX false
+#define PRINT_RX_STATS false
+#define PRINT_NODE_CONFIG false
 #ifndef FIRMWARE_TIMESTAMP_STR
 #define FIRMWARE_TIMESTAMP_STR (__DATE__ " " __TIME__)
 #endif
@@ -521,7 +523,9 @@ PROCESS_THREAD(tx_process, ev, data)
     memset(berr_pkts, 0, sizeof(berr_pkts));
 
   #if TESTBED_LOG_STYLE
+    #if PRINT_RX_STATS
     printf("{rx-%d} %u, %u, %u, %u, %lu, %lu, %u, %u, %u, %lu, %d\n", round, rx_ok, rx_crc_failed, rx_none, tx_done, rx_ok_total, rx_ok_total+rx_failed_total, berr_per_byte_max, berr_per_pkt_max, berr /* bit errors per round */, berr_total, sync_slot);
+    #endif
     #if PRINT_RSSI
     printf("{rssi-%d} ", round);
     for(i=0; i<sizeof(rx_rssi)/sizeof(rx_rssi[0]); i++){
@@ -595,10 +599,12 @@ PROCESS_THREAD(tx_process, ev, data)
 
     memset(my_rx_buffer, 0, msg.radio_len);
 
+    #if PRINT_NODE_CONFIG
     if(round % 32 == 0){
       printf("#R %u, ID: 0x%lx %d, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s), msg: %d bytes, mode: %s, CE: %d, @ %s\n", 
               round, my_id, my_index, tx_node_id, (int8_t)BLE_DEFAULT_RF_POWER, BLE_DEFAULT_CHANNEL, 2400u+ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL], OVERRIDE_BLE_CHANNEL_37 ? "not std" : "std", sizeof(ble_beacon_t), RADIO_MODE_TO_STR(RADIO_MODE_CONF), TEST_CE, FIRMWARE_TIMESTAMP_STR);
     }
+    #endif
     round++;
     init_ibeacon_packet(&msg, &uuids_array[0][0], round, slot);
     //msg.round=round;
@@ -622,22 +628,39 @@ PROCESS_THREAD(tx_process, ev, data)
       watchdog_periodic();
     }
   #else
-    // rtimer_clock_t ticks = (t_start_round - RTIMER_NOW()) * 1uL<<16 / 16000000;
+    #define RTC_PRESCALER 512
+    #define RTIMER_RTC_RATIO_4 (((RTIMER_SECOND / 4)) / ((32768UL / 4) / RTC_PRESCALER)) /* multiplying by 8 to save one decimal digit*/
+    #define RTC_TO_RTIMER(X) ((rtimer_clock_t)((((X)*RTIMER_RTC_RATIO_4))))                      /* +2 before shifting by 2 for rounding */
+    #define RTIMER_TO_RTC(X) ((rtimer_clock_t)(((int64_t)(X) / RTIMER_RTC_RATIO_4)))
 
-  // printf("going to sleep\n");
-    void rtc_schedule(uint16_t ticks);
-    rtc_schedule(1);
+    uint32_t rtc_ticks = RTIMER_TO_RTC((t_start_round - RTIMER_NOW()))/2;
+
+    // printf("going to sleep: %ld hf = %lu lf\n", (t_start_round - RTIMER_NOW()), rtc_ticks*2);
+    void rtc_schedule(uint32_t ticks);
+    rtc_schedule(rtc_ticks);
     watchdog_periodic();
     /* go to sleep mode */
+    // NRF_RADIO->POWER = 0;
+    // /* Unonfigure the channel as the caller expects */
+    // for (int i = 0; i < 8; i++)
+    // {
+    //   NRF_GPIOTE->CONFIG[i] = (GPIOTE_CONFIG_MODE_Disabled << GPIOTE_CONFIG_MODE_Pos) |
+    //                           (31UL << GPIOTE_CONFIG_PSEL_Pos) |
+    //                           (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos);
+    // }
+    // /* Three NOPs are required to make sure configuration is written before setting tasks or getting events */
+    // __NOP();
+    // __NOP();
+    // __NOP();
     __SEV();
     __WFE();
     __WFE();
-    /* turn LEDs off: active low, so set the pins */
-
+    // testbed_cofigure_pins();
+    // my_radio_init(&my_id, my_tx_buffer);    /* turn LEDs off: active low, so set the pins */
     // nrf_gpio_pin_clear(PORT(0,14));
     //correct the round timer based on the sleep time, because timer0 was sleeping
-    t_start_round -= 125000*16;
-    NRF_TIMER0->CC[0] = t_start_round-1000;
+    t_start_round -= RTC_TO_RTIMER(rtc_ticks);
+    NRF_TIMER0->CC[0] = t_start_round;
     while (!NRF_TIMER0->EVENTS_COMPARE[0])
     {
       watchdog_periodic();
@@ -651,10 +674,10 @@ PROCESS_THREAD(tx_process, ev, data)
 }
 /*---------------------------------------------------------------------------*/
 
-void rtc_schedule(uint16_t ticks)
-{
+void rtc_schedule(uint32_t ticks)
+{ 
   /* Set prescaler so that TICK freq is CLOCK_SECOND */
-  NRF_RTC1->PRESCALER = 4095;
+  NRF_RTC1->PRESCALER = RTC_PRESCALER-1;
   NRF_RTC1->TASKS_CLEAR=1;
   NRF_RTC1->CC[1]=ticks;
   /* Enable comapre event and compaer interrupt */

@@ -411,12 +411,11 @@ output_radio_events_gpio_init(void)
     NRF_GPIOTE->CONFIG[i] = (GPIOTE_CONFIG_MODE_Disabled << GPIOTE_CONFIG_MODE_Pos) |
                             (31UL << GPIOTE_CONFIG_PSEL_Pos) |
                             (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos);
-
-    /* Three NOPs are required to make sure configuration is written before setting tasks or getting events */
-    __NOP();
-    __NOP();
-    __NOP();
   }
+  /* Three NOPs are required to make sure configuration is written before setting tasks or getting events */
+  __NOP();
+  __NOP();
+  __NOP();
   //configure GPIOTE
   NRF_GPIOTE->CONFIG[RADIO_ADDRESS_EVENT_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) |
                                                       (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) |
