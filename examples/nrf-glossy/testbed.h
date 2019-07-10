@@ -8,6 +8,7 @@
 #define HELLOWORLD_TESTBED 4
 #define EXT_TESTBED_LSB 5
 #define EXT_TESTBED_TABLE 6
+#define CAU_TESTBED 7
 
 //minimal hello_world for extracting node IDs
 #define TEST_HELLO_WORLD (TESTBED==HELLOWORLD_TESTBED)
@@ -57,6 +58,11 @@
 #define TESTBED_PI_IDS (uint8_t[]){1,2}
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
 
+#elif TESTBED==CAU_TESTBED
+
+#define TESTBED_IDS (uint32_t[]){0x43c18ccc, 0xb4fddd93, 0x27e5a59}
+#define TESTBED_PI_IDS (uint8_t[]){3,4,5}
+#define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
 
 #elif TESTBED==WIRED_TESTBED
 

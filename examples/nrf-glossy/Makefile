@@ -71,8 +71,8 @@ DATE:=$(shell date +'%Y_%m_%d_%H_%M_%S')
 EXPERIMENT_PARAM_TMP:=_ble_mode_${ble_mode}_txpower_${tx_power}_txoffset_${tx_offset}_capture_${capture}_packet_size_${packet_size}_nch_${n_channels}_och_${overrive_ch37}_ntx_${ntx}_i_${initiator}_testbed_${TESTBED_CONF}
 EXPERIMENT_PARAM:=$(subst $(space),,$(EXPERIMENT_PARAM_TMP))
 EXPNAME:=$(CONTIKI_PROJECT)_$(EXPERIMENT_PARAM)
-FIRMWARE_NAME:=$(DATE)_$(EXPNAME).elf
-FIRMWARE_FULL_PATH:=testbedhex/$(FIRMWARE_NAME)
+FIRMWARE_NAME:=$(DATE)_$(EXPNAME)
+FIRMWARE_FULL_PATH:=testbedhex/$(FIRMWARE_NAME).elf
 
 ##JLINK serial numbers of motes to be able to flash one specific
 ##you only need it if you have several motes connected to the same computer
@@ -118,7 +118,21 @@ endif
 SMALL=1
 
 all: $(CONTIKI_PROJECT)
-	cp $(CONTIKI_PROJECT).hex $(DATE)_$(EXPNAME).hex
+	cp $(CONTIKI_PROJECT).hex $(FIRMWARE_NAME).hex
+
+start_jobs:
+	ssh -p17122 testbed@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py start"
+
+#make testbedschedule NAME=hello DURATION=2 FNAME=dirty-channel
+
+testbedschedule: 
+	scp -P17122 $(FNAME).hex ban@sunlight.ds.informatik.uni-kiel.de:/home/ban/newjob.nrf52.hex
+	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex --start"
+
+testbedjob: $(CONTIKI_PROJECT)
+	cp $(CONTIKI_PROJECT).hex $(FIRMWARE_NAME).hex
+	scp -P17122 ${FIRMWARE_NAME}.hex ban@sunlight.ds.informatik.uni-kiel.de:/home/ban/newjob.nrf52.hex
+	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${EXPNAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex --start"
 
 date:
 	echo "$(DATE)" $(COUNT_ACTIVE_NODES)
@@ -209,7 +223,7 @@ include $(CONTIKI)/Makefile.include
 # 	python /Users/beshr/work/chaos-support/eval/iotlab-clitools/iotlab-helper.py schedule --archi="nrf52840dk:multi" --site=$(site) --firmware=$*.elf --duration=$(duration) --run --user=$(user)
 	
 # schedule-iotlab: iotlab
-# 	python /Users/beshr/work/chaos-support/eval/iotlab-clitools/iotlab-helper.py schedule --archi="nrf52840dk:multi" --site=$(site) --firmware=${FIRMWARE_NAME} --duration=$(duration) --run --user=$(user)
+# 	python /Users/beshr/work/chaos-support/eval/iotlab-clitools/iotlab-helper.py schedule --archi="nrf52840dk:multi" --site=$(site) --firmware=${FIRMWARE_NAME}.elf --duration=$(duration) --run --user=$(user)
 
 # update-iotlab-nodes:
 # 	IOTLAB_MAPPING=$$(python /Users/beshr/work/chaos-support/eval/iotlab-clitools/iotlab-helper.py list make --site=$(site) --archi="nrf52840dk:multi"); echo "#define IOTLAB_MAPPING $${IOTLAB_MAPPING}" > iotlabnodes.h
