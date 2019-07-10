@@ -31,7 +31,9 @@ clock_init(void)
 {
   hfclk_xtal_init();
   lfclk_init();
-  // rtc_init();
+  #if BLUEFLOOD_BUSYWAIT
+  rtc_init();
+  #endif
 }
 
 /**

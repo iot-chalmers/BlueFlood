@@ -673,6 +673,7 @@ PROCESS_THREAD(tx_process, ev, data)
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
+#if !BLUEFLOOD_BUSYWAIT
 
 void rtc_schedule(uint32_t ticks)
 { 
@@ -716,3 +717,4 @@ void RTC1_IRQHandler()
   }
 
 }
+#endif

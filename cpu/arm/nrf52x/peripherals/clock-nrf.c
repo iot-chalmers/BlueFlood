@@ -121,7 +121,7 @@ hfclk_xtal_deinit(void)
  * and initializes the overflow interrupt if \ref TICKLESS is TRUE,
  * else initializes the counter tick interrupt
  */
-#if 0
+#if BLUEFLOOD_BUSYWAIT
 void
 rtc_init(void)
 {
