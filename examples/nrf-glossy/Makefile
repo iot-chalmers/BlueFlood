@@ -125,14 +125,22 @@ start_jobs:
 
 #make testbedschedule NAME=hello DURATION=2 FNAME=dirty-channel
 
+testbedschedule2: 
+	scp -P17122 $(FNAME).hex testbed@sunlight.ds.informatik.uni-kiel.de:/home/testbed/newjob.nrf52.hex
+	ssh -p17122 testbed@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/testbed/newjob.nrf52.hex"
+
+testbedstart: 
+	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py status"
+	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py start"
+
 testbedschedule: 
 	scp -P17122 $(FNAME).hex ban@sunlight.ds.informatik.uni-kiel.de:/home/ban/newjob.nrf52.hex
-	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex --start"
+	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex"
 
 testbedjob: $(CONTIKI_PROJECT)
 	cp $(CONTIKI_PROJECT).hex $(FIRMWARE_NAME).hex
 	scp -P17122 ${FIRMWARE_NAME}.hex ban@sunlight.ds.informatik.uni-kiel.de:/home/ban/newjob.nrf52.hex
-	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${EXPNAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex --start"
+	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${EXPNAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex"
 
 date:
 	echo "$(DATE)" $(COUNT_ACTIVE_NODES)
