@@ -262,6 +262,18 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
                               (((X) == RADIO_MODE_MODE_Ble_LR125Kbit) ? "Ble_LR125Kbit" : \
                               (((X) == RADIO_MODE_MODE_Ble_LR500Kbit) ? "Ble_LR500Kbit" : TOSTRING(X)) ) ) ) 
 /*---------------------------------------------------------------------------*/
+#define RTC_PRESCALER 256  // 512 ==> f=64Hz ==> 15.625ms ticks, 256 ==> 128Hz, 7.1825ms
+#define F_RTC_DIV8 ((32768uL/8) / RTC_PRESCALER)
+#define RTIMER_RTC_RATIO (((RTIMER_SECOND / 8)) / F_RTC_DIV8) /* multiplying by 8 to save one decimal digit*/
+#define RTC_TO_RTIMER(X) ((rtimer_clock_t)((((X)*RTIMER_RTC_RATIO))))                      /* +2 before shifting by 2 for rounding */
+#define RTIMER_TO_RTC(X) ((rtimer_clock_t)(((int64_t)(X) / RTIMER_RTC_RATIO)))
+#define RTC_GUARD (1)
+// Example from datasheet
+// Desired COUNTER frequency 8 Hz (125 ms counter period)
+// PRESCALER = round(32.768 kHz / 8 Hz) = 4096
+// fRTC = 8 Hz
+// 125 ms counter period
+/*---------------------------------------------------------------------------*/
 void my_radio_init(uint32_t* my_id, void* my_tx_buffer);
 void my_radio_set_tx_power(uint8_t p);
 void my_radio_off_to_tx(void);

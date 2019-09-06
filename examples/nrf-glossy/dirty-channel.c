@@ -138,23 +138,24 @@ check_timer_miss(rtimer_clock_t ref_time, rtimer_clock_t offset, rtimer_clock_t 
 }
 /*---------------------------------------------------------------------------*/
 #if !BLUEFLOOD_BUSYWAIT
-static int roundtimer_scheduled = false;
+void rtc_schedule(uint32_t ticks);
 
-void TIMER0_IRQHandler()
-{
-  /* Check if this is a compare event and not an overflow */
-  if (NRF_TIMER0->EVENTS_COMPARE[SCHEDULE_REG] == 1) {
-    /* Reset the compare event */
-    NRF_TIMER0->EVENTS_COMPARE[SCHEDULE_REG] = 0;
-    if (roundtimer_scheduled) {
-      NVIC_DisableIRQ(TIMER0_IRQn);
-    } else {
+// static int roundtimer_scheduled = false;
+// void TIMER0_IRQHandler()
+// {
+//   /* Check if this is a compare event and not an overflow */
+//   if (NRF_TIMER0->EVENTS_COMPARE[SCHEDULE_REG] == 1) {
+//     /* Reset the compare event */
+//     NRF_TIMER0->EVENTS_COMPARE[SCHEDULE_REG] = 0;
+//     if (roundtimer_scheduled) {
+//       NVIC_DisableIRQ(TIMER0_IRQn);
+//     } else {
 
-    }
-  } /* else it is overflow */
-  // else
-  //   printf("OVERFLOW\n\r");
-}
+//     }
+//   } /* else it is overflow */
+//   // else
+//   //   printf("OVERFLOW\n\r");
+// }
 #endif
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(tx_process, ev, data)
@@ -239,9 +240,9 @@ PROCESS_THREAD(tx_process, ev, data)
   joined = 0;
   join_round = UINT16_MAX;
 
-  #if !BLUEFLOOD_BUSYWAIT
-  roundtimer_scheduled = false;
-  #endif
+  // #if !BLUEFLOOD_BUSYWAIT
+  // roundtimer_scheduled = false;
+  // #endif
 
   #if ROUND_ROBIN_INITIATOR
   initiator_node_index = INITATOR_NODE_INDEX;
@@ -628,17 +629,13 @@ PROCESS_THREAD(tx_process, ev, data)
       watchdog_periodic();
     }
   #else
-    #define RTC_PRESCALER 512
-    #define RTIMER_RTC_RATIO_4 (((RTIMER_SECOND / 4)) / ((32768UL / 4) / RTC_PRESCALER)) /* multiplying by 8 to save one decimal digit*/
-    #define RTC_TO_RTIMER(X) ((rtimer_clock_t)((((X)*RTIMER_RTC_RATIO_4))))                      /* +2 before shifting by 2 for rounding */
-    #define RTIMER_TO_RTC(X) ((rtimer_clock_t)(((int64_t)(X) / RTIMER_RTC_RATIO_4)))
-
-    uint32_t rtc_ticks = RTIMER_TO_RTC((t_start_round - RTIMER_NOW()))/2;
-
-    // printf("going to sleep: %ld hf = %lu lf\n", (t_start_round - RTIMER_NOW()), rtc_ticks*2);
-    void rtc_schedule(uint32_t ticks);
+    rtimer_clock_t tnow = RTIMER_NOW();
+    uint32_t rtc_ticks = RTIMER_TO_RTC((t_start_round - tnow))-RTC_GUARD; //save one RTC tick for preprocessing!
+    rtimer_clock_t sleep_period = (t_start_round - tnow);
+    // printf("going to sleep: now %lu for %" PRId32 " hf = %lu hf %lu lf\n", tnow, sleep_period, RTC_TO_RTIMER(rtc_ticks), rtc_ticks);
+    #define RTC_SLEEP_MS 125 //for debugging: sleep for 8 RTC ticks ==> 125ms 
+    // rtc_ticks = 8*((RTC_SLEEP_MS*F_RTC_DIV8)/1000); //for debugging: sleep for 8 RTC ticks ==> 125ms 
     rtc_schedule(rtc_ticks);
-    watchdog_periodic();
     /* go to sleep mode */
     // NRF_RADIO->POWER = 0;
     // /* Unonfigure the channel as the caller expects */
@@ -659,12 +656,22 @@ PROCESS_THREAD(tx_process, ev, data)
     // my_radio_init(&my_id, my_tx_buffer);    /* turn LEDs off: active low, so set the pins */
     // nrf_gpio_pin_clear(PORT(0,14));
     //correct the round timer based on the sleep time, because timer0 was sleeping
-    t_start_round -= RTC_TO_RTIMER(rtc_ticks);
-    NRF_TIMER0->CC[0] = t_start_round;
-    while (!NRF_TIMER0->EVENTS_COMPARE[0])
-    {
-      watchdog_periodic();
-    }
+    rtimer_clock_t tnow2 = RTIMER_NOW();
+    rtimer_clock_t sleep_period2 = (tnow2 - tnow);
+    // //XXX Timer0 is still counting. No need to adjust it.
+    // // t_start_round -= RTC_TO_RTIMER(rtc_ticks);
+    // // printf("wakeup: now %lu for %" PRId32 " hf = %lu hf %lu lf\n", tnow2, sleep_period2, RTIMER_TO_RTC(sleep_period2), rtc_ticks);
+    guard_time = GUARD_TIME;
+    tt = t_start_round - 2*GUARD_TIME - ADDRESS_EVENT_T_TX_OFFSET;
+    NRF_TIMER0->EVENTS_COMPARE[0]=0;
+    NRF_TIMER0->CC[0] = tt;
+    BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0UL, tt - tnow2);
+
+    // while (!NRF_TIMER0->EVENTS_COMPARE[0])
+    // {
+    //   watchdog_periodic();
+    // }
+
     // nrf_gpio_pin_set(PORT(0,14));
 #endif
 
@@ -676,9 +683,19 @@ PROCESS_THREAD(tx_process, ev, data)
 #if !BLUEFLOOD_BUSYWAIT
 
 void rtc_schedule(uint32_t ticks)
-{ 
+{     
+  //trick: RTC schedule function will trigger overflow event to mirror that on the GPIO for debugging purposes
+  #if 1
+  // NVIC_DisableIRQ(RTC1_IRQn);
+  // NRF_RTC1->EVTENSET |= RTC_EVTENSET_OVRFLW_Msk;
+  // NRF_RTC1->TASKS_TRIGOVRFLW=1;
+  // NRF_RTC1->TASKS_CLEAR=1;
+  // NRF_RTC1->EVTENCLR |= RTC_EVTENSET_OVRFLW_Msk;
+  // nrf_gpio_cfg_output(RTC_SCHEDULE_PIN);
+  nrf_gpio_pin_toggle(RTC_SCHEDULE_PIN);
+  #endif
   /* Set prescaler so that TICK freq is CLOCK_SECOND */
-  NRF_RTC1->PRESCALER = RTC_PRESCALER-1;
+  NRF_RTC1->PRESCALER = RTC_PRESCALER-1; //fRTC [kHz] = 32.768 / (PRESCALER + 1 )
   NRF_RTC1->TASKS_CLEAR=1;
   NRF_RTC1->CC[1]=ticks;
   /* Enable comapre event and compaer interrupt */
@@ -689,31 +706,28 @@ void rtc_schedule(uint32_t ticks)
   NVIC_SetPriority(RTC1_IRQn, 3);
   NVIC_EnableIRQ(RTC1_IRQn);
   NRF_RTC1->TASKS_START = 1;
+  //poll the WDT so it does not fire early. we keep it running though so it wakes us up if something wrong happened...
+  watchdog_periodic();
 
 }
 
 /** \brief Function for handling the RTC1 interrupts.
- * If the \ref TICKLESS is TRUE then the interrupt sources can be
- * either the counter overflow or counter compare. When overflow
- * occurs \ref seconds_ovr variable can be updated so that the seconds
- * passed can be read. When counter compare interrupt occurs the
- * etimer expiration has occurred and etimer poll must be called.
- * \n If \ref TICKLESS is FALSE then the interrupt will occur every tick
- * of RTC. Here the current clock and \ref current_seconds are
- * updated. Also the etimer expiration is checked every time and
- * etimer poll is called if expiration has occurred.
- *
  */
 void RTC1_IRQHandler()
 {
-  // nrf_gpio_pin_toggle(PORT(0,13));
   if(NRF_RTC1->EVENTS_COMPARE[1] == 1){
+    nrf_gpio_cfg_output(RTC_SCHEDULE_PIN);
+    nrf_gpio_pin_toggle(RTC_SCHEDULE_PIN);
+    nrf_gpio_pin_toggle(LED1_PIN);
     NRF_RTC1->EVENTS_COMPARE[1] = 0;
     // Disable COMPARE1 event and COMPARE1 interrupt:
     NRF_RTC1->EVTENCLR      = RTC_EVTENSET_COMPARE1_Msk;
     NRF_RTC1->INTENCLR      = RTC_INTENSET_COMPARE1_Msk;
     //printf("poll\n");
     NRF_RTC1->TASKS_STOP = 1;
+    NVIC_DisableIRQ(RTC1_IRQn);
+  } else {
+    nrf_gpio_pin_toggle(LED4_PIN);
   }
 
 }
