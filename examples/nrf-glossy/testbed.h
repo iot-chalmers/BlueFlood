@@ -9,6 +9,7 @@
 #define EXT_TESTBED_LSB 5
 #define EXT_TESTBED_TABLE 6
 #define CAU_TESTBED 7
+#define TABLE_TESTBED 8
 
 //minimal hello_world for extracting node IDs
 #define TEST_HELLO_WORLD (TESTBED==HELLOWORLD_TESTBED)
@@ -60,8 +61,33 @@
 
 #elif TESTBED==CAU_TESTBED
 
-#define TESTBED_IDS (uint32_t[]){0x43c18ccc, 0xb4fddd93, 0x27e5a59}
-#define TESTBED_PI_IDS (uint8_t[]){3,4,5}
+// #define TESTBED_IDS (uint32_t[]){0x43c18ccc, 0xb4fddd93, 0x27e5a59}
+// #define TESTBED_PI_IDS (uint8_t[]){3,4,5}
+
+#define TESTBED_IDS (uint32_t[]){0xa8d4c97d,0x43c18ccc, 0xb4fddd93, 0x27e5a59,0x9fb4c897,0x22087f8e,0x9463fd32,0xece2f14c,0x1add226c,0xbd08d46b}
+//note that nodes 12,13 ids are wrong! update them!
+#define TESTBED_PI_IDS (uint8_t[]){1,3,4,5,12,13,14,15,16,17}
+#define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
+
+#elif TESTBED==TABLE_TESTBED
+
+#define mote4  (0x7b150560UL)
+#define mote5  (0xddf8a17fUL)
+#define mote6  (0x8e28b37dUL)
+#define mote7  (0x1c30a5f9UL)
+#define mote8  (0x70f96a53UL)
+#define mote28  (0x2fa5d86eUL)
+/* 52840 boards */
+#define pi10     (0x5cfdb15UL)
+#define mote20  (0x724d2a67UL)
+#define mote21  (0x7475364dUL)
+#define mote22  (0x74231ca7UL)
+#define mote24  (0xef70521UL)
+
+//#define TESTBED_IDS (uint32_t[]){0x7b150560UL, 0xddf8a17fUL, 0x8e28b37dUL, 0x1c30a5f9UL, 0x70f96a53UL, 0x5cfdb15UL, 0x724d2a67UL, 0x7475364dUL, 0x74231ca7UL, 0x2fa5d86eUL}
+//#define TESTBED_PI_IDS (uint8_t[]){4,5,6,7,8,10,20,21,22,28}
+#define TESTBED_IDS (uint32_t[]){mote20,mote21,mote22,mote24}
+#define TESTBED_PI_IDS (uint8_t[]){20,21,22,24} 
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
 
 #elif TESTBED==WIRED_TESTBED

@@ -176,7 +176,7 @@ typedef uint32_t rtimer_clock_t;
 /** \brief 16MHz clock based on TIMER0 for the RTIMER
  *  16MHz = 16MHz/((1<<0)x1). To decrease this frequency \ref TIMER_PRESCALER
  *  can be increased till 9 */
-#define RTIMER_ARCH_SECOND 		(((HFCLK_FREQUENCY)/(1<<TIMER_PRESCALER))/TIMER_COMPARE_FREQ)
+#define RTIMER_ARCH_SECOND 		(((HFCLK_FREQUENCY)/(1uL<<TIMER_PRESCALER))/TIMER_COMPARE_FREQ)
 /** @} */
 
 /** \name Definitions for the RTC1 initialization

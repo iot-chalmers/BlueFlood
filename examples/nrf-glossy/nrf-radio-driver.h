@@ -159,9 +159,9 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 #define ADDRESS_EVENT_T_TX_OFFSET (2984-TX_CHAIN_DELAY-22-16*(!TRIGGER_RADIO_START_WITH_TIMER)) //3044U = 190.25 us - instructions delay or cpu delay -- 3044U-128-44
 
 #elif defined(NRF52840_XXAA)
-#define TX_CHAIN_DELAY_US_X32 (335+EXTRA_TIME_TX_CHAIN_DELAY_US_X32) //10.42us * 32 = 333.44
+#define TX_CHAIN_DELAY_US_X32 (335uL+EXTRA_TIME_TX_CHAIN_DELAY_US_X32) //10.42us * 32 = 333.44
 #define TX_CHAIN_DELAY (((US_TO_RTIMERTICKS(TX_CHAIN_DELAY_US_X32)+(1<<4U))>>5U)) //+(1<<4U) for rounding up, since we scale the number up with a factor of 32
-#define ADDRESS_EVENT_T_TX_OFFSET (2869+ADDRESS_EVENT_T_TX_OFFSET_RAMPUP+1+EXTRA_TIME_ADDRESS_EVENT_T_TX_OFFSET-16*(!TRIGGER_RADIO_START_WITH_TIMER)) //2959.36 = 184.96 us --  2959U-128-44+160
+#define ADDRESS_EVENT_T_TX_OFFSET (2869uL+ADDRESS_EVENT_T_TX_OFFSET_RAMPUP+1+EXTRA_TIME_ADDRESS_EVENT_T_TX_OFFSET-16*(!TRIGGER_RADIO_START_WITH_TIMER)) //2959.36 = 184.96 us --  2959U-128-44+160
 
 #endif /* NRF51 elif defined(NRF52840_XXAA) */
 /*---------------------------------------------------------------------------*/
@@ -199,14 +199,21 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
                                   (RADIO_PACKET_MAX_LEN << RADIO_PCNF1_MAXLEN_Pos))                                
 /*---------------------------------------------------------------------------*/
 /* Output radio state on GPIO */
-#define PORT(P,PIN)                     (P*32uL+PIN)
+#define PORT(P,PIN)                     ((P)*32uL+(PIN))
 #define RADIO_ADDRESS_EVENT_PIN         PORT(1,10) // address      
 // #define RADIO_READY_EVENT_PIN           PORT(1,11) // disabled
-#define ROUND_INDICATOR_PIN           PORT(1,11) 
 
 #define RADIO_TXEN_PIN                  PORT(1,12) // txen 
 #define RADIO_RXEN_PIN                  PORT(1,13) // rxen 
 // #define RADIO_PAYLOAD_PIN            PORT(1,14) // payload
+#define RTC_SCHEDULE_PIN                PORT(0,30) 
+#define RTC_FIRE_PIN                    PORT(0,31)
+#define LED1_PIN                        PORT(0,13)
+#define LED2_PIN                        PORT(0,14)
+#define LED3_PIN                        PORT(0,15)
+#define LED4_PIN                        PORT(0,16)
+#define ROUND_INDICATOR_PIN             LED2_PIN 
+#define SLOT1_INDICATOR_PIN             LED3_PIN 
 
 // Peripheral channel assignments
 #define RADIO_ADDRESS_EVENT_GPIOTE_CH   0UL //PPI
@@ -214,6 +221,8 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 #define RADIO_TXEN_GPIOTE_CH     2UL //manual control
 #define RADIO_RXEN_GPIOTE_CH     3UL //manual control
 #define RADIO_PAYLOAD_GPIOTE_CH     4UL //manual control
+#define RTC_FIRE_GPIOTE_CH     5UL 
+#define RTC_SCHEDULE_GPIOTE_CH     6UL //manual control
 
 #define RADIO_ADDRESS_EVENT_PPI_CH      0UL
 #define RADIO_END_EVENT_PPI_CH          1UL
@@ -225,6 +234,8 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 
 #define TIMER0C0_TIMER1_START_PPI_CH 7UL
 #define TIMER1_RADIO_START_PPI_CH 8UL
+#define RTC_FIRE_PPI_CH 9UL
+#define RTC_SCHEDULE_PPI_CH 10UL
 
 #if 0
 #define DEBUG_GPIO_OUTPUT_TXEN() do{ NRF_GPIOTE->TASKS_OUT[RADIO_TXEN_GPIOTE_CH] = 1UL; }while(0)
@@ -266,4 +277,5 @@ void schedule_tx_abs(uint8_t* buf, int channel, rtimer_clock_t t_abs);
 /* TX after t ticks from now */
 void schedule_tx(uint8_t* buf, int channel, rtimer_clock_t t);
 void testbed_cofigure_pins();
+void testbed_clear_debug_pins();
 #endif /* _NRF_RADIO_DRIVER_H_ */

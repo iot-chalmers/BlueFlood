@@ -23,7 +23,7 @@
 #define PRINT_RSSI false
 #define PRINT_LAST_RX false
 #define PRINT_RX_STATS false
-#define PRINT_NODE_CONFIG false
+#define PRINT_NODE_CONFIG true
 #ifndef FIRMWARE_TIMESTAMP_STR
 #define FIRMWARE_TIMESTAMP_STR (__DATE__ " " __TIME__)
 #endif
@@ -211,7 +211,7 @@ PROCESS_THREAD(tx_process, ev, data)
       nrf_gpio_pin_clear(PORT(0,6));
 
       testbed_cofigure_pins();
-  
+      testbed_clear_debug_pins();
       //Enter System-on idle mode
       // __WFE();
       __SEV();
