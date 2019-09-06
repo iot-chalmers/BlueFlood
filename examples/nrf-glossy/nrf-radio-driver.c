@@ -50,6 +50,8 @@ void my_radio_get_id(uint32_t* my_id){
 /*---------------------------------------------------------------------------*/
 void my_radio_init(uint32_t* my_id, void* my_tx_buffer) 
 {
+  //disable instruction cache!
+  // NRF_NVMC->ICACHECNF = 0x00;
   /* Reset all states in the radio peripheral */
   NRF_RADIO->POWER = 0;
   NRF_RADIO->POWER = 1;
@@ -194,6 +196,7 @@ void schedule_tx_abs(uint8_t* buf, int channel, rtimer_clock_t t_abs)
 {
   /* Put the scheduled time in a compare register */
   my_radio_off_to_tx();
+  NRF_TIMER0->EVENTS_COMPARE[0]=0;
   NRF_TIMER0->CC[0] = t_abs;
   NRF_RADIO->FREQUENCY = (uint8_t)ble_hw_frequency_channels[channel];
   NRF_RADIO->DATAWHITEIV = channel;     /* This value needs to correspond to the channel being used */
@@ -227,9 +230,12 @@ void my_radio_off_completely(void)
 
   /* Clear event register */
   NRF_RADIO->EVENTS_DISABLED = 0U;
+  // NRF_RADIO->TASKS_RXEN = 0U;
+  // NRF_RADIO->TASKS_TXEN = 0U;
+
   /* Disable radio */
   NRF_RADIO->TASKS_DISABLE = 1U;
-  while(NRF_RADIO->EVENTS_DISABLED == 0U);
+  BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_DISABLED != 0U, US_TO_RTIMERTICKS(10)); //arbitrary timeout
   NRF_RADIO->EVENTS_DISABLED = 0U;
   NRF_RADIO->EVENTS_END = 0U;
   NRF_RADIO->EVENTS_ADDRESS = 0U;
@@ -281,6 +287,7 @@ void schedule_rx_abs(uint8_t* buf, int channel, rtimer_clock_t t_abs)
 {
   /* Put the scheduled time in a compare register */
   my_radio_off_to_rx();
+  NRF_TIMER0->EVENTS_COMPARE[0]=0;
   NRF_TIMER0->CC[0] = t_abs;
   NRF_RADIO->FREQUENCY = (uint8_t)ble_hw_frequency_channels[channel];
   NRF_RADIO->DATAWHITEIV = channel;     /* This value needs to correspond to the channel being used */
