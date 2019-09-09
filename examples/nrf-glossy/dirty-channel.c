@@ -44,8 +44,8 @@
 #define PACKET_AIR_TIME_MIN (PACKET_AIR_TIME(BLUETOOTH_BEACON_PDU(IBEACON_SIZE),RADIO_MODE_CONF))
 #define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(256)
 #define RX_SLOT_LEN (SLOT_PROCESSING_TIME+TX_CHAIN_DELAY+ US_TO_RTIMERTICKS(MY_RADIO_RAMPUP_TIME_US) + PACKET_AIR_TIME_MIN)
-#define GUARD_TIME (US_TO_RTIMERTICKS(64))
-#define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(64))
+#define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(48))
+#define GUARD_TIME (GUARD_TIME_SHORT*2)
 #define SLOT_LEN (RX_SLOT_LEN+2*GUARD_TIME_SHORT)
 #define SLOT_LEN_NOTSYNCED (RX_SLOT_LEN+GUARD_TIME)
 
@@ -69,7 +69,7 @@ volatile uint8_t initiator_node_index = INITATOR_NODE_INDEX;
 #endif /* ROUND_ROBIN_INITIATOR */
 #define IS_INITIATOR() (my_id == tx_node_id)
 /*---------------------------------------------------------------------------*/
-static char dbgmsg[256]="";
+static char dbgmsg[256]="", dbgmsg2[256]="";
 static uint8_t my_tx_buffer[255] = {0};
 static uint8_t my_rx_buffer[255] = {0};
 #if USE_HAMMING_CODE
@@ -377,27 +377,31 @@ PROCESS_THREAD(tx_process, ev, data)
             r++; s++;
             watchdog_periodic();
           } else {
+            rtimer_clock_t rx_target_time, rx_tn;
+            uint8_t rx_missed_slot;
             join_trial = 0;
-            rtimer_clock_t target_time = tt - ADDRESS_EVENT_T_TX_OFFSET - guard_time;
-            rtimer_clock_t tn = RTIMER_NOW();
+            rx_target_time = tt - ADDRESS_EVENT_T_TX_OFFSET - guard_time;
+            rx_tn = RTIMER_NOW();
             // tt = t_start_round + slot * SLOT_LEN
-            uint8_t missed_slot = check_timer_miss(t_start_round, slot * SLOT_LEN - ADDRESS_EVENT_T_TX_OFFSET - guard_time, tn);
-            schedule_rx_abs(my_rx_buffer, GET_CHANNEL(round,slot), target_time);
+            rx_missed_slot = check_timer_miss(t_start_round, slot * SLOT_LEN - ADDRESS_EVENT_T_TX_OFFSET - guard_time, rx_tn);
+            schedule_rx_abs(my_rx_buffer, GET_CHANNEL(round,slot), rx_target_time);
             // BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, ABS((int64_t)(target_time - RTIMER_NOW()))+1);
-            BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, SLOT_LEN);
+            BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, 2*guard_time);
             slot_started = NRF_TIMER0->EVENTS_COMPARE[0];
             // BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, SLOT_LEN);
             // while(!NRF_TIMER0->EVENTS_COMPARE[0]);
             // nrf_gpio_cfg_output(ROUND_INDICATOR_PIN);
             if(slot_started){
               nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
-              BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0U, ADDRESS_EVENT_T_TX_OFFSET + guard_time);
+              BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0U, ADDRESS_EVENT_T_TX_OFFSET + 2*guard_time);
             }
-            // BUSYWAIT_UNTIL(1, 128);
-
-            //removing this line destroys the timing!!!
-            sprintf(dbgmsg, "t %lu %lu n %lu m %d", tt, target_time, tn, missed_slot );
-
+            // BUSYWAIT_UNTIL(0, 1230);
+            // static rtimer_clock_t sprintf_now1 = 0, sprintf_now2 = 0;
+            // sprintf_now1 = RTIMER_NOW();
+            // //removing this line destroys the timing!!!
+            // sprintf(dbgmsg, "t %lu %lu n %lu m %d", tt, rx_target_time, rx_tn, rx_missed_slot );
+            // sprintf_now2 = RTIMER_NOW();
+            // sprintf(dbgmsg2, "sprintf %lu", sprintf_now2 - sprintf_now1 );
           }
           got_address_event=NRF_RADIO->EVENTS_ADDRESS && slot_started;
 
@@ -571,8 +575,9 @@ PROCESS_THREAD(tx_process, ev, data)
 
     printf("{tx-%d} %s\n", round, tx_status);
     if(dbgmsg[0]!=0){
-      printf("{dg-%d} %s\n", round, dbgmsg);
+      printf("{dg-%d} %s\n%s\n", round, dbgmsg, dbgmsg2);
       dbgmsg[0]=0;
+      dbgmsg2[0]=0;
     }
   #else /* TESTBED_LOG_STYLE */
     printf("rx_ok %u, crc %u, none %u, tx %u: OK %lu of %lu, berr b%u p%u r%u %lu, sync %d\n", rx_ok, rx_crc_failed, rx_none, tx_done, rx_ok_total, rx_ok_total+rx_failed_total, berr_per_byte_max, berr_per_pkt_max, berr /* bit errors per round */, berr_total, sync_slot);
