@@ -42,10 +42,10 @@
 #define IBEACON_SIZE  (sizeof(ble_beacon_t))
 #define BLUETOOTH_BEACON_PDU(S) (8+(S))
 #define PACKET_AIR_TIME_MIN (PACKET_AIR_TIME(BLUETOOTH_BEACON_PDU(IBEACON_SIZE),RADIO_MODE_CONF))
-#define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(256)
+#define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(20)
 #define RX_SLOT_LEN (SLOT_PROCESSING_TIME+TX_CHAIN_DELAY+ US_TO_RTIMERTICKS(MY_RADIO_RAMPUP_TIME_US) + PACKET_AIR_TIME_MIN)
-#define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(48))
-#define GUARD_TIME (GUARD_TIME_SHORT*2)
+#define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(8))
+#define GUARD_TIME (GUARD_TIME_SHORT*10)
 #define SLOT_LEN (RX_SLOT_LEN+2*GUARD_TIME_SHORT)
 #define SLOT_LEN_NOTSYNCED (RX_SLOT_LEN+GUARD_TIME)
 
@@ -666,7 +666,7 @@ PROCESS_THREAD(tx_process, ev, data)
     uint32_t rtc_ticks = RTIMER_TO_RTC((t_start_round - tnow))-RTC_GUARD; //save one RTC tick for preprocessing!
     rtimer_clock_t sleep_period = (t_start_round - tnow);
     // printf("going to sleep: now %lu for %" PRId32 " hf = %lu hf %lu lf\n", tnow, sleep_period, RTC_TO_RTIMER(rtc_ticks), rtc_ticks);
-    #define RTC_SLEEP_MS 125 //for debugging: sleep for 8 RTC ticks ==> 125ms 
+    // #define RTC_SLEEP_MS 125 //for debugging: sleep for 8 RTC ticks ==> 125ms 
     // rtc_ticks = 8*((RTC_SLEEP_MS*F_RTC_DIV8)/1000); //for debugging: sleep for 8 RTC ticks ==> 125ms 
     rtc_schedule(rtc_ticks);
     /* go to sleep mode */

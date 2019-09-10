@@ -262,7 +262,7 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
                               (((X) == RADIO_MODE_MODE_Ble_LR125Kbit) ? "Ble_LR125Kbit" : \
                               (((X) == RADIO_MODE_MODE_Ble_LR500Kbit) ? "Ble_LR500Kbit" : TOSTRING(X)) ) ) ) 
 /*---------------------------------------------------------------------------*/
-#define RTC_PRESCALER 256  // 512 ==> f=64Hz ==> 15.625ms ticks, 256 ==> 128Hz, 7.1825ms
+#define RTC_PRESCALER 32  // 512 ==> f=64Hz ==> 15.625ms ticks, 256 ==> 128Hz, 7.1825ms
 #define F_RTC_DIV8 ((32768uL/8) / RTC_PRESCALER)
 #define RTIMER_RTC_RATIO (((RTIMER_SECOND / 8)) / F_RTC_DIV8) /* multiplying by 8 to save one decimal digit*/
 #define RTC_TO_RTIMER(X) ((rtimer_clock_t)((((X)*RTIMER_RTC_RATIO))))                      /* +2 before shifting by 2 for rounding */
