@@ -365,58 +365,47 @@ PROCESS_THREAD(tx_process, ev, data)
             got_address_event = NRF_RADIO->EVENTS_ADDRESS;
             slot_started = 1;
           } else {
-            rtimer_clock_t rx_target_time, rx_tn;
-            uint8_t rx_missed_slot;
+            rtimer_clock_t rx_target_time, rx_tn, rx_tref, rx_toffset, t_proc;
+            uint8_t rx_missed_slot = 0;
+            /* 
+            * Note that: tt = t_start_round + slot * SLOT_LEN
+            * Round logic started at rx_tref = t_start_round - FIRST_SLOT_OFFSET
+            * We want to start rx at rx_target_time
+            * rx_toffset = t_start_round + slot * SLOT_LEN - ADDRESS_EVENT_T_TX_OFFSET - guard_time - (t_start_round - FIRST_SLOT_OFFSET);
+            */
             join_trial = 0;
             rx_target_time = tt - ADDRESS_EVENT_T_TX_OFFSET - guard_time;
             rx_tn = RTIMER_NOW();
-            // tt = t_start_round + slot * SLOT_LEN
-            rx_missed_slot = check_timer_miss(t_start_round, slot * SLOT_LEN - ADDRESS_EVENT_T_TX_OFFSET - guard_time, rx_tn);
-            schedule_rx_abs(my_rx_buffer, GET_CHANNEL(round,slot), rx_target_time);
-            // BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, ABS((int64_t)(target_time - RTIMER_NOW()))+1);
-            BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, 2*guard_time);
-            slot_started = NRF_TIMER0->EVENTS_COMPARE[0];
-            // BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, SLOT_LEN);
-            // while(!NRF_TIMER0->EVENTS_COMPARE[0]);
-            // nrf_gpio_cfg_output(ROUND_INDICATOR_PIN);
-            if(slot_started){
-              nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
-              BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0U, ADDRESS_EVENT_T_TX_OFFSET + 2*guard_time);
+            rx_tref = t_start_round - FIRST_SLOT_OFFSET;
+            rx_toffset = slot * SLOT_LEN + FIRST_SLOT_OFFSET - ADDRESS_EVENT_T_TX_OFFSET - guard_time;
+            rx_missed_slot = check_timer_miss(rx_tref, rx_toffset, rx_tn);
+            nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
+            if(!rx_missed_slot){
+              // t_proc = RTIMER_NOW();
+              schedule_rx_abs(my_rx_buffer, GET_CHANNEL(round, slot), rx_target_time);
+              t_proc = RTIMER_NOW() - rx_tn;
+              BUSYWAIT_UNTIL_ABS(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, rx_target_time + 2*guard_time + SLOT_PROCESSING_TIME );
+              slot_started = NRF_TIMER0->EVENTS_COMPARE[0];
+              if(slot_started){
+                nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
+                BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0U, 2*ADDRESS_EVENT_T_TX_OFFSET );
+                got_address_event = NRF_RADIO->EVENTS_ADDRESS;
+              }
+            }  
+            if(rx_missed_slot || !slot_started) {
+              sprintf(dbgmsg, "t %" PRIu32 " %" PRIu32 " n %" PRIu32 " p %" PRIu32 " m %d %d", (t_start_round), rx_target_time, rx_tn, t_proc, rx_missed_slot, slot_started );
             }
-            // BUSYWAIT_UNTIL(0, 1230);
-            // static rtimer_clock_t sprintf_now1 = 0, sprintf_now2 = 0;
-            // sprintf_now1 = RTIMER_NOW();
-            // //removing this line destroys the timing!!!
-            // sprintf(dbgmsg, "t %lu %lu n %lu m %d", tt, rx_target_time, rx_tn, rx_missed_slot );
-            // sprintf_now2 = RTIMER_NOW();
-            // sprintf(dbgmsg2, "sprintf %lu", sprintf_now2 - sprintf_now1 );
           }
-          got_address_event=NRF_RADIO->EVENTS_ADDRESS && slot_started;
 
-          if(!got_address_event) {
-            last_rx_ok = 0;
-            if(joined){
-              my_radio_off_completely();
-            }
-            // printf("no rx\n");
-          } else {
-            BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_PAYLOAD != 0U, RX_SLOT_LEN);
-            if(joined && !NRF_RADIO->EVENTS_PAYLOAD){
-              my_radio_off_completely();
-            } else {
+          if(got_address_event) {
+            BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_PAYLOAD != 0U, get_rx_ts() + PAYLOAD_AIR_TIME_MIN);
+            got_payload_event = NRF_RADIO->EVENTS_PAYLOAD;
+            last_rx_ok = got_payload_event;
+            if(got_payload_event){
               BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_END != 0U, CRC_AIR_T + TX_CHAIN_DELAY);
+              got_end_event = NRF_RADIO->EVENTS_END;
+              last_crc_is_ok = USE_HAMMING_CODE || ((NRF_RADIO->EVENTS_END != 0U) && (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk));
             }
-            // volatile bool radio_ended = (NRF_RADIO->EVENTS_END != 0U);
-            // volatile bool crc_status_ok = (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk);
-            // last_crc_is_ok = radio_ended && crc_status_ok;
-            last_rx_ok = NRF_RADIO->EVENTS_PAYLOAD;
-            got_payload_event=NRF_RADIO->EVENTS_PAYLOAD;
-            got_end_event = NRF_RADIO->EVENTS_END;
-            last_crc_is_ok = USE_HAMMING_CODE || ((NRF_RADIO->EVENTS_END != 0U) && (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk));
-            //last_rx_ok = NRF_RADIO->EVENTS_PAYLOAD && last_crc_is_ok;
-            // if(NRF_RADIO->CRCSTATUS != RADIO_CRCSTATUS_CRCSTATUS_CRCOk) printf("f crc\n");
-            // else if(!NRF_RADIO->EVENTS_PAYLOAD) printf("f pkt\n");
-            // else printf("f rx\n");
           }
           /* check if it is a valid packet: a. our uuid and b. CRC ok */
           if(last_rx_ok && last_crc_is_ok){
@@ -463,13 +452,13 @@ PROCESS_THREAD(tx_process, ev, data)
 
         if(last_rx_ok && last_crc_is_ok) {
           tx_status[logslot] = '-';
-        } else if(!NRF_TIMER0->EVENTS_COMPARE[0]) {
+        } else if(!slot_started) {
           tx_status[logslot] = 'M';
-        }  else if(!NRF_RADIO->EVENTS_ADDRESS) {
+        }  else if(!got_address_event) {
           tx_status[logslot] = 'A';
-        } else if(!NRF_RADIO->EVENTS_PAYLOAD) {
+        } else if(!got_payload_event) {
           tx_status[logslot] = 'P';
-        } else if(!NRF_RADIO->EVENTS_END) {
+        } else if(!got_end_event) {
           tx_status[logslot] = 'E';
         } else if(!last_crc_is_ok) {
           tx_status[logslot] = 'C';
@@ -479,11 +468,11 @@ PROCESS_THREAD(tx_process, ev, data)
 
         rx_ok += last_rx_ok && last_crc_is_ok;
         if(CRC_LEN > 0 || USE_HAMMING_CODE){
-          rx_crc_failed += NRF_RADIO->EVENTS_ADDRESS && !last_crc_is_ok;
+          rx_crc_failed += got_address_event && !last_crc_is_ok;
         } else {
           rx_crc_failed += memcmp(&my_rx_buffer, &msg, msg.radio_len - 5) != 0;
         }
-        rx_none += (!NRF_RADIO->EVENTS_ADDRESS || !NRF_RADIO->EVENTS_END) && !last_rx_ok;
+        rx_none += (!got_address_event || !got_end_event) && !last_rx_ok;
         rx_ts_delta[logslot] = get_rx_ts() - TX_CHAIN_DELAY - tt;
         rx_rssi[logslot] = get_rx_rssi();
         static uint8_t failed_rounds = 0;
