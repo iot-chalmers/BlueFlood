@@ -64,9 +64,29 @@
 // #define TESTBED_IDS (uint32_t[]){0x43c18ccc, 0xb4fddd93, 0x27e5a59}
 // #define TESTBED_PI_IDS (uint8_t[]){3,4,5}
 
-#define TESTBED_IDS (uint32_t[]){0xa8d4c97d,0x43c18ccc, 0xb4fddd93, 0x27e5a59,0x9fb4c897,0x22087f8e,0x9463fd32,0xece2f14c,0x1add226c,0xbd08d46b}
-//note that nodes 12,13 ids are wrong! update them!
-#define TESTBED_PI_IDS (uint8_t[]){1,3,4,5,12,13,14,15,16,17}
+// 1       #@ Sep 10 2019 16:58:01, ID: 0xa8d4c97d, 
+// 2       #@ Sep 10 2019 16:58:01, ID: 0x921a4434, 
+// 3       #@ Sep 10 2019 16:58:01, ID: 0x43c18ccc, 
+// 4       #@ Sep 10 2019 16:58:01, ID: 0xb4fddd93, 
+// 5       #@ Sep 10 2019 16:58:01, ID: 0x27e5a59, 
+// 6       #@ Sep 10 2019 16:58:01, ID: 0x8036b5ea, 
+// 7       #@ Sep 10 2019 16:58:01, ID: 0x4a8f1926, 
+// 8       #@ Sep 10 2019 16:58:01, ID: 0x39f7b9e3, 
+// 9       #@ Sep 10 2019 16:58:01, ID: 0xd73c5005,
+// 10      #@ Sep 10 2019 16:58:01, ID: 0x7dd93314, 
+// 12      #@ Sep 10 2019 16:58:01, ID: 0x9fb4c897, 
+// 13      #@ Sep 10 2019 16:58:01, ID: 0x22087f8e, 
+// 14      #@ Sep 10 2019 16:58:01, ID: 0x9463fd32, 
+// 15      #@ Sep 10 2019 16:58:01, ID: 0xece2f14c, 
+// 16      #@ Sep 10 2019 16:58:01, ID: 0x1add226c, 
+// 17      #@ Sep 10 2019 16:58:01, ID: 0xbd08d46b, 
+// 18      #@ Sep 10 2019 16:58:01, ID: 0xe7c767e3, 
+// 19      #@ Sep 10 2019 16:58:01, ID: 0x1a36886, 
+// 20      #@ Sep 10 2019 16:58:01, ID: 0x59c34e8f, 
+
+
+#define TESTBED_IDS (uint32_t[]){0xa8d4c97d,0x921a4434,0x43c18ccc, 0xb4fddd93, 0x27e5a59,0x8036b5ea,0x4a8f1926,0x39f7b9e3,0xd73c5005,0x7dd93314,0x9fb4c897,0x22087f8e,0x9463fd32,0xece2f14c,0x1add226c,0xbd08d46b,0xe7c767e3,0x1a36886,0x59c34e8f}
+#define TESTBED_PI_IDS (uint8_t[]){1,2,3,4,5,6,7,8,9,10,12,13,14,15,16,17,18,19,20}
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
 
 #elif TESTBED==TABLE_TESTBED
