@@ -134,6 +134,11 @@ void my_radio_init(uint32_t* my_id, void* my_tx_buffer)
     NRF_RADIO->CRCPOLY = 0x0100065B;
     NRF_RADIO->CRCINIT = BLE_LL_CRCINIT_ADV;
 
+  } else if(CRC_LEN == 2 /* && RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit*/){
+     /* 16-bit CRC with ITU-T polynomial with 0 as start condition*/
+    NRF_RADIO->CRCPOLY = 0x11021;
+    NRF_RADIO->CRCCNF = 0x202; // Number of checksum bits
+    NRF_RADIO->CRCINIT = 0x0UL;      /* CRC initial value */
   }
 
   NRF_RADIO->SHORTS = (RADIO_SHORTS_END_DISABLE_Enabled << RADIO_SHORTS_END_DISABLE_Pos);

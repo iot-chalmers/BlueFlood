@@ -114,8 +114,14 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 // #else
 // #define CRC_LEN 3
 // #endif
+#if RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit
+#define CRC_LEN 2
+#define RADIO_PACKET_MAX_LEN 127
+#else
 #define CRC_LEN 3
 #define RADIO_PACKET_MAX_LEN 251
+#endif
+
 /*---------------------------------------------------------------------------*/
 #define BLE_LL_CRCINIT_ADV      (0x555555UL)
 /* Access address for advertising channels */
@@ -266,6 +272,12 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
     t0 = RTIMER_NOW(); \
     while(!(cond) && RTIMER_CLOCK_LT(RTIMER_NOW(), t0 + (max_time))); \
   } while(0)
+
+#define BUSYWAIT_UNTIL_ABS(cond,t0) \
+  do { \
+    while(!(cond) && RTIMER_CLOCK_LT(RTIMER_NOW(), t0)); \
+  } while(0)
+
 #define MAX(A,B) (((A)>(B))? (A) : (B))
 #define get_rx_rssi() ((int8_t)(-(int8_t)(NRF_RADIO->RSSISAMPLE)))
 #define get_rx_ts() (NRF_TIMER0->CC[TIMESTAMP_ADDR_REG])
