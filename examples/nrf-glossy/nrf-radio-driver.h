@@ -25,9 +25,9 @@
 #define MY_ADV_ADDRESS_LOW 0xbababa00UL /* HACK: keep the LSB set to 0 because the BLE long-range HW mode on this board seems to be setting this byte to zero after reception while keeping CRC ok (or another SW bug) */
 #define MY_ADV_ADDRESS_HI 0xB0B0U
 /*---------------------------------------------------------------------------*/
-#define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(15)
+#define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(20)
 #define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(0))
-#define GUARD_TIME (US_TO_RTIMERTICKS(8))
+#define GUARD_TIME (US_TO_RTIMERTICKS(16))
 /*---------------------------------------------------------------------------*/
 #ifndef RADIO_TEST_TX_CARRIER
 #define RADIO_TEST_TX_CARRIER false
