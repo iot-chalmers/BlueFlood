@@ -125,7 +125,7 @@ start_jobs:
 	ssh -p17122 testbed@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py start"
 
 #make testbedschedule NAME=hello DURATION=2 FNAME=dirty-channel
-tetstbedsync:
+testbedsync:
 	rsync -ravz -e "ssh -p17122" ${USER}@sunlight.ds.informatik.uni-kiel.de:/home/${USER}/jobs/ ./cau_testbed/
 
 testbedschedule2: 
