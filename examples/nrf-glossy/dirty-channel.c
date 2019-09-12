@@ -40,6 +40,7 @@
 #define PRINT_LAST_RX false
 #define PRINT_RX_STATS false
 #define PRINT_NODE_CONFIG true
+#define PRINT_CUSTOM_DEBUG_MSG false
 #ifndef FIRMWARE_TIMESTAMP_STR
 #define FIRMWARE_TIMESTAMP_STR (__DATE__ " " __TIME__)
 #endif
@@ -56,7 +57,9 @@ volatile uint8_t initiator_node_index = INITATOR_NODE_INDEX;
 #endif /* ROUND_ROBIN_INITIATOR */
 #define IS_INITIATOR() (my_id == tx_node_id)
 /*---------------------------------------------------------------------------*/
+#if PRINT_CUSTOM_DEBUG_MSG
 static char dbgmsg[256]="", dbgmsg2[256]="";
+#endif
 static uint8_t my_tx_buffer[255] = {0};
 static uint8_t my_rx_buffer[255] = {0};
 #if USE_HAMMING_CODE
@@ -393,7 +396,9 @@ PROCESS_THREAD(tx_process, ev, data)
               }
             }  
             if(rx_missed_slot || !slot_started) {
+              #if PRINT_CUSTOM_DEBUG_MSG
               sprintf(dbgmsg, "t %" PRIu32 " %" PRIu32 " n %" PRIu32 " p %" PRIu32 " m %d %d", (t_start_round), rx_target_time, rx_tn, t_proc, rx_missed_slot, slot_started );
+              #endif
             }
           }
 
@@ -550,11 +555,17 @@ PROCESS_THREAD(tx_process, ev, data)
     #endif /* PRINT_TS_DELTA */
 
     printf("{tx-%d} %s\n", round, tx_status);
+    #if PRINT_CUSTOM_DEBUG_MSG
     if(dbgmsg[0]!=0){
-      printf("{dg-%d} %s\n%s\n", round, dbgmsg, dbgmsg2);
+      printf("{dg-%d} %s\n", round, dbgmsg);
       dbgmsg[0]=0;
-      dbgmsg2[0]=0;
     }
+    if(dbgmsg2[0]!=0){
+    printf("{dg2-%d} %s\n", round, dbgmsg2);
+    dbgmsg2[0]=0;
+    }
+    #endif /* PRINT_DEBUG_MSG */
+
   #else /* TESTBED_LOG_STYLE */
     printf("rx_ok %u, crc %u, none %u, tx %u: OK %lu of %lu, berr b%u p%u r%u %lu, sync %d\n", rx_ok, rx_crc_failed, rx_none, tx_done, rx_ok_total, rx_ok_total+rx_failed_total, berr_per_byte_max, berr_per_pkt_max, berr /* bit errors per round */, berr_total, sync_slot);
 
