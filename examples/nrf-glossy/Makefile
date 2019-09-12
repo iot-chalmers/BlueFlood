@@ -3,6 +3,7 @@ SHELL:=/bin/sh
 GCC_INSTALL_ROOT	:= ~/opt/gnu-mcu-eclipse/arm-none-eabi-gcc/7.2.1-1.1-20180401-0515
 GCC_VERSION			:= 7.2.1
 GCC_PREFIX			:= arm-none-eabi
+USER:=ban
 
 #UART_BAUDRATE_BAUDRATE_Baud115200=0x01D7E000 #/*!< 115200 baud (actual rate: 115942) */
 #UART_BAUDRATE_BAUDRATE_Baud230400=0x03AFB000 #/*!< 230400 baud (actual rate: 231884) */
@@ -124,6 +125,8 @@ start_jobs:
 	ssh -p17122 testbed@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py start"
 
 #make testbedschedule NAME=hello DURATION=2 FNAME=dirty-channel
+tetstbedsync:
+	rsync -ravz -e "ssh -p17122" ${USER}@sunlight.ds.informatik.uni-kiel.de:/home/${USER}/jobs/ ./cau_testbed/
 
 testbedschedule2: 
 	scp -P17122 $(FNAME).hex testbed@sunlight.ds.informatik.uni-kiel.de:/home/testbed/newjob.nrf52.hex
