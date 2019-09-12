@@ -1,17 +1,41 @@
 #ifndef _NRF_RADIO_DRIVER_H_
 #define _NRF_RADIO_DRIVER_H_
 
-#ifndef RADIO_TEST_TX_CARRIER
-#define RADIO_TEST_TX_CARRIER false
-#endif
-
-#define TRIGGER_RADIO_START_WITH_TIMER (true)
-#define NRF_RADIO_DEBUG_STATE true
-#define RADIO_REV_C_OR_RADIO_REV_1 false
 /*---------------------------------------------------------------------------*/
+#ifndef RADIO_MODE_CONF
+  #ifdef NRF51
+  #define RADIO_MODE_CONF RADIO_MODE_MODE_Ble_1Mbit
+  #else
+  #define RADIO_MODE_CONF RADIO_MODE_MODE_Ble_1Mbit //RADIO_MODE_MODE_Ble_2Mbit //RADIO_MODE_MODE_Ble_1Mbit //RADIO_MODE_MODE_Ble_LR125Kbit //RADIO_MODE_MODE_Ble_LR500Kbit
+  #endif
+#endif
+/*---------------------------------------------------------------------------*/
+#ifndef TEST_CE
+#define TEST_CE 0 //capture effect? : UUID array is different (16bytes)
+#endif
+#ifndef ARTIFICIAL_TX_OFFSET
+#define ARTIFICIAL_TX_OFFSET 0
+#endif
+/*---------------------------------------------------------------------------*/
+#define HEXC(c) (((c) & 0xf) <= 9 ? ((c) & 0xf) + '0' : ((c) & 0xf) + 'a' - 10)
 #define US_TO_RTIMERTICKS(D)    ((int64_t)(D) << 4L)
 #define RTIMERTICKS_TO_US(T)    ((int64_t)(T) >> 4L)
 #define RTIMERTICKS_TO_US_64(T) RTIMERTICKS_TO_US(T)
+/*---------------------------------------------------------------------------*/
+#define MY_ADV_ADDRESS_LOW 0xbababa00UL /* HACK: keep the LSB set to 0 because the BLE long-range HW mode on this board seems to be setting this byte to zero after reception while keeping CRC ok (or another SW bug) */
+#define MY_ADV_ADDRESS_HI 0xB0B0U
+/*---------------------------------------------------------------------------*/
+#define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(15)
+#define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(0))
+#define GUARD_TIME (US_TO_RTIMERTICKS(8))
+/*---------------------------------------------------------------------------*/
+#ifndef RADIO_TEST_TX_CARRIER
+#define RADIO_TEST_TX_CARRIER false
+#endif
+/*---------------------------------------------------------------------------*/
+#define TRIGGER_RADIO_START_WITH_TIMER (true)
+#define NRF_RADIO_DEBUG_STATE true
+#define RADIO_REV_C_OR_RADIO_REV_1 false
 /*---------------------------------------------------------------------------*/
 #define BLE_MODE_BIT_TIME_X2(M) ( (M==RADIO_MODE_MODE_Ble_1Mbit) ? 2 : ((M==RADIO_MODE_MODE_Ble_2Mbit) ? 1 : ((M==RADIO_MODE_MODE_Ble_LR500Kbit) ? 4 : ((M==RADIO_MODE_MODE_Ble_LR125Kbit) ? 16 : 0))) )
 #define PACKET_PAYLOAD_AIR_TIME(S,M) (US_TO_RTIMERTICKS((4*(S))*BLE_MODE_BIT_TIME_X2(M))) /* 8*size_in-bytes*symbol_time_times_2/2 */
@@ -22,13 +46,6 @@
 #define USE_WHITENING 1
 #ifndef BLE_DEFAULT_RF_POWER
 #define BLE_DEFAULT_RF_POWER (256-40) /* -40dBm */
-#endif
-#ifndef RADIO_MODE_CONF
-  #ifdef NRF51
-  #define RADIO_MODE_CONF RADIO_MODE_MODE_Ble_1Mbit
-  #else
-  #define RADIO_MODE_CONF RADIO_MODE_MODE_Ble_1Mbit //RADIO_MODE_MODE_Ble_2Mbit //RADIO_MODE_MODE_Ble_1Mbit //RADIO_MODE_MODE_Ble_LR125Kbit //RADIO_MODE_MODE_Ble_LR500Kbit
-  #endif
 #endif
 /*---------------------------------------------------------------------------*/
 #ifndef OVERRIDE_BLE_CHANNEL_37
@@ -85,8 +102,6 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
   #define GET_CHANNEL(round,slot) (ble_hw_frequency_channels[ble_channels_list[ble_hopping_list[HOP_INDEX(round,slot)]%NUMBER_OF_CHANNELS]])
 
 #endif /* NUMBER_OF_CHANNELS */
-
-
 /*---------------------------------------------------------------------------*/
 #if USE_WHITENING
 #define WHITENING_CONF RADIO_PCNF1_WHITEEN_Enabled

@@ -15,7 +15,23 @@
 
 #include "testbed.h"
 #include "nrf-gpio.h"
-
+/*---------------------------------------------------------------------------*/
+#ifndef NTX
+#define ROUND_LEN (5U)
+#else
+#define ROUND_LEN ((NTX)+1)
+#endif /* NTX */
+#define RX_SLACK_T_US (1*RTIMER_SECOND/2 - ROUND_LEN * SLOT_LEN)
+#define ROUND_PERIOD (RX_SLACK_T_US + ROUND_LEN * SLOT_LEN)
+/*---------------------------------------------------------------------------*/
+#define IBEACON_SIZE  (sizeof(ble_beacon_t))
+#define BLUETOOTH_BEACON_PDU(S) (8+(S))
+#define PACKET_AIR_TIME_MIN (PACKET_AIR_TIME(BLUETOOTH_BEACON_PDU(IBEACON_SIZE),RADIO_MODE_CONF))
+#define PAYLOAD_AIR_TIME_MIN (PACKET_AIR_TIME(IBEACON_SIZE,RADIO_MODE_CONF))
+#define RX_SLOT_LEN (SLOT_PROCESSING_TIME+TX_CHAIN_DELAY+ US_TO_RTIMERTICKS(MY_RADIO_RAMPUP_TIME_US) + PACKET_AIR_TIME_MIN)
+#define SLOT_LEN (RX_SLOT_LEN+2*GUARD_TIME_SHORT)
+#define SLOT_LEN_NOTSYNCED (RX_SLOT_LEN+GUARD_TIME)
+#define FIRST_SLOT_OFFSET (SLOT_PROCESSING_TIME + GUARD_TIME + ADDRESS_EVENT_T_TX_OFFSET)
 /*---------------------------------------------------------------------------*/
 /* Log config */
 #define TESTBED_LOG_STYLE (TESTBED!=WIRED_TESTBED)
@@ -27,35 +43,6 @@
 #ifndef FIRMWARE_TIMESTAMP_STR
 #define FIRMWARE_TIMESTAMP_STR (__DATE__ " " __TIME__)
 #endif
-/*---------------------------------------------------------------------------*/
-#ifndef TEST_CE
-#define TEST_CE 0 //capture effect? : UUID array is different (16bytes)
-#endif
-#ifndef ARTIFICIAL_TX_OFFSET
-#define ARTIFICIAL_TX_OFFSET 0
-#endif
-/*---------------------------------------------------------------------------*/
-#define HEXC(c) (((c) & 0xf) <= 9 ? ((c) & 0xf) + '0' : ((c) & 0xf) + 'a' - 10)
-#define MY_ADV_ADDRESS_LOW 0xbababa00UL /* HACK: keep the LSB set to 0 because the BLE long-range HW mode on this board seems to be setting this byte to zero after reception while keeping CRC ok (or another SW bug) */
-#define MY_ADV_ADDRESS_HI 0xB0B0U
-/*---------------------------------------------------------------------------*/
-#define IBEACON_SIZE  (sizeof(ble_beacon_t))
-#define BLUETOOTH_BEACON_PDU(S) (8+(S))
-#define PACKET_AIR_TIME_MIN (PACKET_AIR_TIME(BLUETOOTH_BEACON_PDU(IBEACON_SIZE),RADIO_MODE_CONF))
-#define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(20)
-#define RX_SLOT_LEN (SLOT_PROCESSING_TIME+TX_CHAIN_DELAY+ US_TO_RTIMERTICKS(MY_RADIO_RAMPUP_TIME_US) + PACKET_AIR_TIME_MIN)
-#define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(8))
-#define GUARD_TIME (GUARD_TIME_SHORT*10)
-#define SLOT_LEN (RX_SLOT_LEN+2*GUARD_TIME_SHORT)
-#define SLOT_LEN_NOTSYNCED (RX_SLOT_LEN+GUARD_TIME)
-
-#define RX_SLACK_T_US (1*RTIMER_SECOND/2) //((US_TO_RTIMERTICKS(2000000UL)))
-#ifndef NTX
-#define ROUND_LEN (5U)
-#else
-#define ROUND_LEN ((NTX)+1)
-#endif /* NTX */
-#define ROUND_PERIOD (RX_SLACK_T_US + ROUND_LEN * SLOT_LEN)
 /*---------------------------------------------------------------------------*/
 const uint8_t uuids_array[UUID_LIST_LENGTH][16] = UUID_ARRAY;
 const uint32_t testbed_ids[] = TESTBED_IDS;
@@ -276,7 +263,7 @@ PROCESS_THREAD(tx_process, ev, data)
     // nrf_gpio_cfg_output(ROUND_INDICATOR_PIN);
     nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
     for(slot = 0; ROUND_LEN_RULE; slot++){
-      logslot=slot+1;
+      logslot = slot + 1;
       tt = t_start_round + slot * SLOT_LEN;
       // BUSYWAIT_UNTIL(1, tt - guard_time);
       // do_tx = (IS_INITIATOR() && !rx_ok && (slot % 2)) || (!IS_INITIATOR() && synced && (slot > 1) && my_turn);
@@ -356,10 +343,11 @@ PROCESS_THREAD(tx_process, ev, data)
         rx_ts_delta[logslot] = get_rx_ts() - tt;
         rx_rssi[logslot] = get_rx_rssi();
       } else if(do_rx){
+        static int join_trial = 0;
+        uint8_t got_payload_event, got_address_event, got_end_event, slot_started;
         do{
-          static int join_trial = 0;
-          uint8_t got_payload_event=0, got_address_event=0, got_end_event = 0, slot_started = 0;
-          int channel=0;
+          got_payload_event=0, got_address_event=0, got_end_event = 0, slot_started = 0, last_crc_is_ok = 0, last_rx_ok = 0;
+          uint8_t channel = 0;
           if(!joined){ /* slave bootstrap code */
             int r=0, s=0;
             /* hop the channel when we have waited long enough on one channel: 2*N/(NTX/2) rounds */
@@ -368,14 +356,14 @@ PROCESS_THREAD(tx_process, ev, data)
               // channel=GET_CHANNEL(r,s);
               join_trial++;
             }
-            channel=GET_CHANNEL(r,s);
+            channel = GET_CHANNEL(r, s);
             my_radio_rx(my_rx_buffer, channel);
-            //my_radio_off_completely();
             rtimer_clock_t to = 2UL*ROUND_PERIOD+random_rand()%ROUND_PERIOD;
             BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0UL, to);
-            slot_started = 1;
             r++; s++;
             watchdog_periodic();
+            got_address_event = NRF_RADIO->EVENTS_ADDRESS;
+            slot_started = 1;
           } else {
             rtimer_clock_t rx_target_time, rx_tn;
             uint8_t rx_missed_slot;
@@ -445,7 +433,6 @@ PROCESS_THREAD(tx_process, ev, data)
               if(!synced){
                 guard_time = GUARD_TIME_SHORT;
                 synced = 1;
-                //msg.minor = rx_pkt->minor;
                 slot = rx_pkt->slot;
                 logslot=slot+1;
                 round = rx_pkt->round;
@@ -648,7 +635,6 @@ PROCESS_THREAD(tx_process, ev, data)
     uint8_t round_is_late = check_timer_miss(t_start_round, ROUND_PERIOD-TIMER_GUARD, now);
     t_start_round += ROUND_PERIOD;
 
-    //BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, ROUND_PERIOD);
     if(round_is_late){
       printf("#!{%d}PRE GO late: %ld\n", round, now - t_start_round);
       round_is_late = check_timer_miss(t_start_round, ROUND_PERIOD-TIMER_GUARD, now);
@@ -666,10 +652,8 @@ PROCESS_THREAD(tx_process, ev, data)
     uint32_t rtc_ticks = RTIMER_TO_RTC((t_start_round - tnow))-RTC_GUARD; //save one RTC tick for preprocessing!
     rtimer_clock_t sleep_period = (t_start_round - tnow);
     // printf("going to sleep: now %lu for %" PRId32 " hf = %lu hf %lu lf\n", tnow, sleep_period, RTC_TO_RTIMER(rtc_ticks), rtc_ticks);
-    // #define RTC_SLEEP_MS 125 //for debugging: sleep for 8 RTC ticks ==> 125ms 
-    // rtc_ticks = 8*((RTC_SLEEP_MS*F_RTC_DIV8)/1000); //for debugging: sleep for 8 RTC ticks ==> 125ms 
     rtc_schedule(rtc_ticks);
-    /* go to sleep mode */
+    /* go to sleep mode: put prepherals to sleep then sleep the CPU */
     // NRF_RADIO->POWER = 0;
     // /* Unonfigure the channel as the caller expects */
     // for (int i = 0; i < 8; i++)
@@ -682,34 +666,27 @@ PROCESS_THREAD(tx_process, ev, data)
     // __NOP();
     // __NOP();
     // __NOP();
+    /* Go to sleep sequence: 
+     * SEV Set event and WFE wait for event first to consume any previously set event if any, then wait for event to sleep the CPU until an event happens. 
+    */
     __SEV();
     __WFE();
     __WFE();
     // testbed_cofigure_pins();
     // my_radio_init(&my_id, my_tx_buffer);    /* turn LEDs off: active low, so set the pins */
-    // nrf_gpio_pin_clear(PORT(0,14));
-    //correct the round timer based on the sleep time, because timer0 was sleeping
-    rtimer_clock_t tnow2 = RTIMER_NOW();
-    rtimer_clock_t sleep_period2 = (tnow2 - tnow);
+    // rtimer_clock_t tnow2 = RTIMER_NOW();
+    // rtimer_clock_t sleep_period2 = (tnow2 - tnow);
+    // //correct the round timer based on the sleep time, because timer0 was sleeping // NO!
     // //XXX Timer0 is still counting. No need to adjust it.
     // // t_start_round -= RTC_TO_RTIMER(rtc_ticks);
     // // printf("wakeup: now %lu for %" PRId32 " hf = %lu hf %lu lf\n", tnow2, sleep_period2, RTIMER_TO_RTC(sleep_period2), rtc_ticks);
     guard_time = GUARD_TIME;
-    tt = t_start_round - 2*GUARD_TIME - ADDRESS_EVENT_T_TX_OFFSET;
+    tt = t_start_round - FIRST_SLOT_OFFSET;
     NRF_TIMER0->EVENTS_COMPARE[0]=0;
     NRF_TIMER0->CC[0] = tt;
-    BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0UL, tt - tnow2);
-
-    // while (!NRF_TIMER0->EVENTS_COMPARE[0])
-    // {
-    //   watchdog_periodic();
-    // }
-
-    // nrf_gpio_pin_set(PORT(0,14));
+    BUSYWAIT_UNTIL_ABS(NRF_TIMER0->EVENTS_COMPARE[0] != 0UL, tt);
 #endif
-
   }
-
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
@@ -734,14 +711,12 @@ void rtc_schedule(uint32_t ticks)
   /* Enable comapre event and compaer interrupt */
   NRF_RTC1->EVTENSET      = RTC_EVTENSET_COMPARE1_Msk;;
   NRF_RTC1->INTENSET      = RTC_INTENSET_COMPARE1_Msk;
-
   /* Enable Interrupt for RTC1 in the core */
   NVIC_SetPriority(RTC1_IRQn, 3);
   NVIC_EnableIRQ(RTC1_IRQn);
   NRF_RTC1->TASKS_START = 1;
   //poll the WDT so it does not fire early. we keep it running though so it wakes us up if something wrong happened...
   watchdog_periodic();
-
 }
 
 /** \brief Function for handling the RTC1 interrupts.
@@ -751,7 +726,6 @@ void RTC1_IRQHandler()
   if(NRF_RTC1->EVENTS_COMPARE[1] == 1){
     nrf_gpio_cfg_output(RTC_SCHEDULE_PIN);
     nrf_gpio_pin_toggle(RTC_SCHEDULE_PIN);
-    nrf_gpio_pin_toggle(LED1_PIN);
     NRF_RTC1->EVENTS_COMPARE[1] = 0;
     // Disable COMPARE1 event and COMPARE1 interrupt:
     NRF_RTC1->EVTENCLR      = RTC_EVTENSET_COMPARE1_Msk;
@@ -759,9 +733,6 @@ void RTC1_IRQHandler()
     //printf("poll\n");
     NRF_RTC1->TASKS_STOP = 1;
     NVIC_DisableIRQ(RTC1_IRQn);
-  } else {
-    nrf_gpio_pin_toggle(LED4_PIN);
   }
-
 }
 #endif
