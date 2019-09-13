@@ -407,9 +407,9 @@ PROCESS_THREAD(tx_process, ev, data)
             got_payload_event = NRF_RADIO->EVENTS_PAYLOAD;
             last_rx_ok = got_payload_event;
             if(got_payload_event){
-              BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_END != 0U, CRC_AIR_T + TX_CHAIN_DELAY);
+              BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_END != 0U, CRC_AIR_T);
               got_end_event = NRF_RADIO->EVENTS_END;
-              last_crc_is_ok = USE_HAMMING_CODE || ((NRF_RADIO->EVENTS_END != 0U) && (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk));
+              last_crc_is_ok = USE_HAMMING_CODE || ((got_end_event != 0U) && (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk));
             }
           }
           /* check if it is a valid packet: a. our uuid and b. CRC ok */
