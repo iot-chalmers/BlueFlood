@@ -55,6 +55,8 @@
 
 #elif TESTBED==EXT_TESTBED_TABLE
 
+#define MY_ADV_ADDRESS_HI 0xA1A1U
+
 #define TESTBED_IDS (uint32_t[]){0x4da8f2cb, 0x7c2757b3}
 #define TESTBED_PI_IDS (uint8_t[]){1,2}
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
@@ -91,6 +93,8 @@
 
 #elif TESTBED==TABLE_TESTBED
 
+#define MY_ADV_ADDRESS_HI 0xA1A1U
+
 #define mote4  (0x7b150560UL)
 #define mote5  (0xddf8a17fUL)
 #define mote6  (0x8e28b37dUL)
@@ -112,6 +116,8 @@
 
 #elif TESTBED==WIRED_TESTBED
 
+#define MY_ADV_ADDRESS_HI 0xA1A1U
+
 #define mote4  (0x7b150560UL)
 #define mote5  (0xddf8a17fUL)
 #define mote6  (0x8e28b37dUL)
@@ -132,6 +138,8 @@
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
 
 #elif TESTBED==HELLOWORLD_TESTBED
+
+#define MY_ADV_ADDRESS_HI 0xA1A1U
 
 //does not really matter... Thoe goal of this mode is to extract the mote IDs to put in your testbed configuration
 #define TESTBED_IDS (uint32_t[]){0x724d2a67UL}

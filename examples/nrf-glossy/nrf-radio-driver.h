@@ -1,6 +1,8 @@
 #ifndef _NRF_RADIO_DRIVER_H_
 #define _NRF_RADIO_DRIVER_H_
 
+#include "testbed.h"
+
 /*---------------------------------------------------------------------------*/
 #ifndef RADIO_MODE_CONF
   #ifdef NRF51
@@ -22,8 +24,12 @@
 #define RTIMERTICKS_TO_US(T)    ((int64_t)(T) >> 4L)
 #define RTIMERTICKS_TO_US_64(T) RTIMERTICKS_TO_US(T)
 /*---------------------------------------------------------------------------*/
+#ifndef MY_ADV_ADDRESS_LOW
 #define MY_ADV_ADDRESS_LOW 0xbababa00UL /* HACK: keep the LSB set to 0 because the BLE long-range HW mode on this board seems to be setting this byte to zero after reception while keeping CRC ok (or another SW bug) */
+#endif
+#ifndef MY_ADV_ADDRESS_HI
 #define MY_ADV_ADDRESS_HI 0xB0B0U
+#endif
 /*---------------------------------------------------------------------------*/
 #define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(30)
 #define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(0))
