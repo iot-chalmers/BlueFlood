@@ -275,7 +275,7 @@ PROCESS_THREAD(tx_process, ev, data)
       tt = t_start_round + slot * SLOT_LEN;
       // BUSYWAIT_UNTIL(1, tt - guard_time);
       // do_tx = (IS_INITIATOR() && !rx_ok && (slot % 2)) || (!IS_INITIATOR() && synced && (slot > 1) && my_turn);
-      do_tx = (IS_INITIATOR() && slot < 2) || (!IS_INITIATOR() && synced && my_turn);
+      do_tx = (IS_INITIATOR() /*&& slot < 2*/) || (!IS_INITIATOR() && synced && my_turn);
 
       //do_tx = my_id == tx_node_id;
       do_rx = !do_tx;
