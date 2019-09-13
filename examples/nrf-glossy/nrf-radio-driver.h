@@ -33,7 +33,7 @@
 /*---------------------------------------------------------------------------*/
 #define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(30)
 #define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(0))
-#define GUARD_TIME (US_TO_RTIMERTICKS(16))
+#define GUARD_TIME (US_TO_RTIMERTICKS(32))
 /*---------------------------------------------------------------------------*/
 #ifndef RADIO_TEST_TX_CARRIER
 #define RADIO_TEST_TX_CARRIER false
@@ -43,11 +43,20 @@
 #define NRF_RADIO_DEBUG_STATE true
 #define RADIO_REV_C_OR_RADIO_REV_1 false
 /*---------------------------------------------------------------------------*/
-#define BLE_MODE_BIT_TIME_X2(M) ( (M==RADIO_MODE_MODE_Ble_1Mbit) ? 2 : ((M==RADIO_MODE_MODE_Ble_2Mbit) ? 1 : ((M==RADIO_MODE_MODE_Ble_LR500Kbit) ? 4 : ((M==RADIO_MODE_MODE_Ble_LR125Kbit) ? 16 : 0))) )
+#define BLE_MODE_BIT_TIME_X2(M) ( (M==RADIO_MODE_MODE_Ble_1Mbit) ? 2 : ((M==RADIO_MODE_MODE_Ble_2Mbit) ? 1 : ((M==RADIO_MODE_MODE_Ble_LR500Kbit) ? 4 : ((M==RADIO_MODE_MODE_Ble_LR125Kbit) ? 16 : ((M==RADIO_MODE_MODE_Ieee802154_250Kbit) ? 8 : 0)))) )
+
 #define PACKET_PAYLOAD_AIR_TIME(S,M) (US_TO_RTIMERTICKS((4*(S))*BLE_MODE_BIT_TIME_X2(M))) /* 8*size_in-bytes*symbol_time_times_2/2 */
-#define PACKET_HEADER_AIR_TIME(M) US_TO_RTIMERTICKS( (M==RADIO_MODE_MODE_Ble_1Mbit) ? 8+4*8 : ((M==RADIO_MODE_MODE_Ble_2Mbit) ? 8+4*8*2 : ((M==RADIO_MODE_MODE_Ble_LR500Kbit) || (M==RADIO_MODE_MODE_Ble_LR125Kbit) ? 80+256+16+24 : 0)) )
+
+#define PACKET_HEADER_AIR_TIME(M) US_TO_RTIMERTICKS( (M==RADIO_MODE_MODE_Ble_1Mbit) ? 8+4*8 : ((M==RADIO_MODE_MODE_Ble_2Mbit) ? 8+4*8*2 : ((M==RADIO_MODE_MODE_Ble_LR500Kbit) || (M==RADIO_MODE_MODE_Ble_LR125Kbit) ? 80+256+16+24 : ((M==RADIO_MODE_MODE_Ieee802154_250Kbit) ? 160 : 0))) )
+
 #define PACKET_CRC_FOOTER_AIR_TIME(M) ((US_TO_RTIMERTICKS(4*CRC_LEN*BLE_MODE_BIT_TIME_X2(M))) + 3*BLE_MODE_BIT_TIME_X2(M)*((M==RADIO_MODE_MODE_Ble_LR500Kbit)||(M==RADIO_MODE_MODE_Ble_LR125Kbit))/2)
+
+#if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+//CRC is considered part of payload, so do not count it twice
+#define PACKET_AIR_TIME(S,M) (PACKET_HEADER_AIR_TIME(M)+PACKET_PAYLOAD_AIR_TIME(S,M))
+#else
 #define PACKET_AIR_TIME(S,M) (PACKET_HEADER_AIR_TIME(M)+PACKET_CRC_FOOTER_AIR_TIME(M)+PACKET_PAYLOAD_AIR_TIME(S,M))
+#endif /* (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit) */
 /*---------------------------------------------------------------------------*/
 #define USE_WHITENING 1
 #ifndef BLE_DEFAULT_RF_POWER
@@ -124,7 +133,7 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 #define CRC_LEN 2
 #define RADIO_PACKET_MAX_LEN 127
 #else
-#define CRC_LEN 3
+#define CRC_LEN 3 //for BLE_LR modes, 3 is the only valid setting
 #define RADIO_PACKET_MAX_LEN 251
 #endif
 
@@ -167,6 +176,11 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 //all times assume 1/8Mbps --> 1 bit = 8 us
 #define EXTRA_TIME_ADDRESS_EVENT_T_TX_OFFSET (4559)//(7428-2869) //464.24us*16=7428
 #define EXTRA_TIME_TX_CHAIN_DELAY_US_X32 (2365-335-5+3) //73.92us*16=1183 * 2 = 2365.44 ... -5 to compensate for variations
+
+#elif RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit
+//all times assume 1/8Mbps --> 1 bit = 8 us
+#define EXTRA_TIME_ADDRESS_EVENT_T_TX_OFFSET (2126)//(7428-2869) //464.24us*16=7428
+#define EXTRA_TIME_TX_CHAIN_DELAY_US_X32 (164+880) //73.92us*16=1183 * 2 = 2365.44 ... -5 to compensate for variations
 
 #endif /* RADIO_MODE_CONF */
 
@@ -214,6 +228,13 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
                                 (RADIO_PCNF0_PLEN_LongRange << RADIO_PCNF0_PLEN_Pos) | \
                                 (NRF_CILEN_BITS << RADIO_PCNF0_CILEN_Pos) | \
                                 (NRF_TERMLEN_BITS << RADIO_PCNF0_TERMLEN_Pos)
+
+                                /* 802.15.4: LENGTH includes CRC Length, no S1, LFLEN 8bit, preamble 32bit zero + SFD */
+#define NRF_PCNF0_154           (RADIO_PCNF0_CRCINC_Include << RADIO_PCNF0_CRCINC_Pos) |\
+                                (RADIO_PCNF0_S1INCL_Automatic << RADIO_PCNF0_S1INCL_Pos) |\
+                                (NRF_LFLEN_BITS << RADIO_PCNF0_LFLEN_Pos) | \
+                                (RADIO_PCNF0_PLEN_32bitZero << RADIO_PCNF0_PLEN_Pos)
+
 /* Packet configuration 
     Little endian, 
     base address: 3 bytes (+1 prefix ==> 4bytes for BLE access address)
@@ -223,7 +244,13 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
                                   (RADIO_PCNF1_ENDIAN_Little << RADIO_PCNF1_ENDIAN_Pos) | \
                                   (3UL << RADIO_PCNF1_BALEN_Pos)          | \
                                   (0 << RADIO_PCNF1_STATLEN_Pos)          | \
-                                  (RADIO_PACKET_MAX_LEN << RADIO_PCNF1_MAXLEN_Pos))                                
+                                  (RADIO_PACKET_MAX_LEN << RADIO_PCNF1_MAXLEN_Pos))       
+
+#define NRF_PCNF1_154               ( (RADIO_PCNF1_WHITEEN_Disabled << RADIO_PCNF1_WHITEEN_Pos)| \
+                                  (RADIO_PCNF1_ENDIAN_Little << RADIO_PCNF1_ENDIAN_Pos) | \
+                                  (0UL << RADIO_PCNF1_BALEN_Pos)          | \
+                                  (0 << RADIO_PCNF1_STATLEN_Pos)          | \
+                                  (RADIO_PACKET_MAX_LEN << RADIO_PCNF1_MAXLEN_Pos))                         
 /*---------------------------------------------------------------------------*/
 /* Output radio state on GPIO */
 #define PORT(P,PIN)                     ((P)*32uL+(PIN))
@@ -258,6 +285,7 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 #define RADIO_T0_RX_EVENT_PPI_CH     4UL
 // #define RADIO_PAYLOAD_EVENT_PPI_CH     5UL
 #define RADIO_DISABLED_EVENT_PPI_CH 6UL
+#define RADIO_FRAME_EVENT_PPI_CH     5UL
 
 #define TIMER0C0_TIMER1_START_PPI_CH 7UL
 #define TIMER1_RADIO_START_PPI_CH 8UL
@@ -286,14 +314,19 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 
 #define MAX(A,B) (((A)>(B))? (A) : (B))
 #define get_rx_rssi() ((int8_t)(-(int8_t)(NRF_RADIO->RSSISAMPLE)))
+#if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+#define get_rx_ts() (NRF_TIMER0->CC[TIMESTAMP_ADDR_REG] - 1) //correct for custom PPI channel latency
+#else
 #define get_rx_ts() (NRF_TIMER0->CC[TIMESTAMP_ADDR_REG])
+#endif
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define AT __FILE__ ":" TOSTRING(__LINE__)
 #define RADIO_MODE_TO_STR(X)  (((X) == RADIO_MODE_MODE_Ble_1Mbit) ? "Ble_1Mbit" : \
                               (((X) == RADIO_MODE_MODE_Ble_2Mbit) ? "Ble_2Mbit" : \
                               (((X) == RADIO_MODE_MODE_Ble_LR125Kbit) ? "Ble_LR125Kbit" : \
-                              (((X) == RADIO_MODE_MODE_Ble_LR500Kbit) ? "Ble_LR500Kbit" : TOSTRING(X)) ) ) ) 
+                              (((X) == RADIO_MODE_MODE_Ble_LR500Kbit) ? "Ble_LR500Kbit" : \
+                              (((X) == RADIO_MODE_MODE_Ieee802154_250Kbit) ? "Zgb_250Kbit" : TOSTRING(X)) ) ) ) ) 
 /*---------------------------------------------------------------------------*/
 #define RTC_PRESCALER 32  // 512 ==> f=64Hz ==> 15.625ms ticks, 256 ==> 128Hz, 7.1825ms
 #define F_RTC_DIV8 ((32768uL/8) / RTC_PRESCALER)

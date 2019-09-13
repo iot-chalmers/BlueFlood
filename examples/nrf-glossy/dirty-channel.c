@@ -86,7 +86,12 @@ static int get_testbed_index(uint32_t my_id, const uint32_t *testbed_ids, uint8_
 }
 /*---------------------------------------------------------------------------*/
 static void init_ibeacon_packet(ble_beacon_t *pkt, const uint8_t* uuid, uint16_t round, uint16_t slot){
+#if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+    pkt->radio_len = sizeof(ble_beacon_t);
+#else
   pkt->radio_len = sizeof(ble_beacon_t)-2; /* len + pdu_header */ //length of the rest of the packet
+
+#endif
   pkt->pdu_header = 0x42; //pdu type: 0x02 ADV_NONCONN_IND, rfu 0, rx 0, tx 1 //2;
   pkt->adv_address_low = MY_ADV_ADDRESS_LOW;
   pkt->adv_address_hi = MY_ADV_ADDRESS_HI;
@@ -270,7 +275,7 @@ PROCESS_THREAD(tx_process, ev, data)
       tt = t_start_round + slot * SLOT_LEN;
       // BUSYWAIT_UNTIL(1, tt - guard_time);
       // do_tx = (IS_INITIATOR() && !rx_ok && (slot % 2)) || (!IS_INITIATOR() && synced && (slot > 1) && my_turn);
-      do_tx = (IS_INITIATOR()) || (!IS_INITIATOR() && synced && my_turn);
+      do_tx = (IS_INITIATOR() && slot < 2) || (!IS_INITIATOR() && synced && my_turn);
 
       //do_tx = my_id == tx_node_id;
       do_rx = !do_tx;
@@ -362,10 +367,15 @@ PROCESS_THREAD(tx_process, ev, data)
             channel = GET_CHANNEL(r, s);
             my_radio_rx(my_rx_buffer, channel);
             rtimer_clock_t to = 2UL*ROUND_PERIOD+random_rand()%ROUND_PERIOD;
+            #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+            BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_FRAMESTART != 0UL, to);
+            got_address_event = NRF_RADIO->EVENTS_FRAMESTART;
+            #else
             BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0UL, to);
+            got_address_event = NRF_RADIO->EVENTS_ADDRESS;
+            #endif
             r++; s++;
             watchdog_periodic();
-            got_address_event = NRF_RADIO->EVENTS_ADDRESS;
             slot_started = 1;
           } else {
             rtimer_clock_t rx_target_time, rx_tn, rx_tref, rx_toffset, t_proc;
@@ -391,8 +401,13 @@ PROCESS_THREAD(tx_process, ev, data)
               slot_started = NRF_TIMER0->EVENTS_COMPARE[0];
               if(slot_started){
                 nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
-                BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0U, 2*ADDRESS_EVENT_T_TX_OFFSET );
+                #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+                BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_FRAMESTART != 0U, rx_target_time + 2*guard_time + SLOT_PROCESSING_TIME + ADDRESS_EVENT_T_TX_OFFSET );
+                got_address_event = NRF_RADIO->EVENTS_FRAMESTART;
+                #else
+                BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_ADDRESS != 0U, rx_target_time + 2*guard_time + SLOT_PROCESSING_TIME + ADDRESS_EVENT_T_TX_OFFSET );
                 got_address_event = NRF_RADIO->EVENTS_ADDRESS;
+                #endif
               }
             }  
             if(rx_missed_slot || !slot_started) {
@@ -403,6 +418,15 @@ PROCESS_THREAD(tx_process, ev, data)
           }
 
           if(got_address_event) {
+            #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+            //no EVENTS_PAYLOAD is emitted
+            BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_END != 0U, get_rx_ts() + PAYLOAD_AIR_TIME_MIN + CRC_AIR_T);
+
+            got_end_event = NRF_RADIO->EVENTS_END;
+            last_rx_ok = got_payload_event = got_end_event;
+            last_crc_is_ok = USE_HAMMING_CODE || ((got_end_event != 0U) && (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk));
+            // last_crc_is_ok = 1; //XXX
+            #else
             BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_PAYLOAD != 0U, get_rx_ts() + PAYLOAD_AIR_TIME_MIN);
             got_payload_event = NRF_RADIO->EVENTS_PAYLOAD;
             last_rx_ok = got_payload_event;
@@ -411,6 +435,7 @@ PROCESS_THREAD(tx_process, ev, data)
               got_end_event = NRF_RADIO->EVENTS_END;
               last_crc_is_ok = USE_HAMMING_CODE || ((got_end_event != 0U) && (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk));
             }
+            #endif /* (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit) */
           }
           /* check if it is a valid packet: a. our uuid and b. CRC ok */
           if(last_rx_ok && last_crc_is_ok){
@@ -422,6 +447,8 @@ PROCESS_THREAD(tx_process, ev, data)
 
             /* check if it is our beacon packet */
             last_rx_ok = last_crc_is_ok ? (( rx_pkt->adv_address_low == MY_ADV_ADDRESS_LOW ) && ( rx_pkt->adv_address_hi == MY_ADV_ADDRESS_HI )) : 0;
+            // last_rx_ok = last_crc_is_ok; //XXX!
+
             if(last_rx_ok){
               memcpy(&msg, &my_rx_buffer, rx_pkt->radio_len + 1);
               if(!synced){

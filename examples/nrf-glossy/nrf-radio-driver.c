@@ -21,13 +21,21 @@
 #define BLE_ADV_PDU_HDR_TXADD_MASK          (0x40)
 #define BLE_ADV_PDU_HDR_RXADD_MASK          (0x80)
 /*---------------------------------------------------------------------------*/
-/* RF center frequency for each channel index (offset from 2400 MHz) */
+#if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+/* RF center frequency for each channel index (offset from 2400 MHz), spacing is 5MHz for 15.4 -- not standard!, but channels with indices 11--26 are standard */
+const uint8_t ble_hw_frequency_channels[40] = {
+  5,10,15,20,25,30,35,40,45,50,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,55,60,65,70,75,80,85,90,95,85,90,95
+};
+#else
+/* RF center frequency for each channel index (offset from 2400 MHz), spacing is 2MHz for BLE */
 const uint8_t ble_hw_frequency_channels[40] = {
      4,  6,  8, 10, 12, 14, 16, 18, 20, 22, /* 0-9 */
     24, 28, 30, 32, 34, 36, 38, 40, 42, 44, /* 10-19 */
     46, 48, 50, 52, 54, 56, 58, 60, 62, 64, /* 20-29 */
     66, 68, 70, 72, 74, 76, 78,  BLE_CHANNEL_37_FREQ, 26, 80, /* 30-39 */
 };
+#endif
+
 const uint8_t ble_channels_list[] = CHANNEL_LIST;
 const uint8_t ble_hopping_list[] = HOPPING_LIST;
 static uint8_t nrf_tx_power = BLE_DEFAULT_RF_POWER;
@@ -73,6 +81,7 @@ void my_radio_init(uint32_t* my_id, void* my_tx_buffer)
   #else 
   NRF_RADIO->MODECNF0 = (RADIO_MODECNF0_RU_Fast << RADIO_MODECNF0_RU_Pos) 
                       | (RADIO_MODECNF0_DTX_Center << RADIO_MODECNF0_DTX_Pos);
+                      //Note: For 802.15.4 and BLE LR mode, only DTX_Center is a valid setting
   NRF_RADIO->MODE = RADIO_MODE_CONF;
   #endif
 
@@ -90,32 +99,40 @@ void my_radio_init(uint32_t* my_id, void* my_tx_buffer)
     */    
   #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ble_1Mbit || RADIO_MODE_CONF == RADIO_MODE_MODE_Ble_2Mbit)
   
+  NRF_RADIO->PCNF1 = NRF_PCNF1; 
   NRF_RADIO->PCNF0 = (RADIO_MODE_CONF == RADIO_MODE_MODE_Ble_1Mbit) ? NRF_PCNF0_1M : NRF_PCNF0_2M; 
 
   /* [164] */
   *(volatile uint32_t *)0x4000173C &= ~0x80000000;
-  #if(RADIO_REV_C_OR_RADIO_REV_1) //for radio chip revision c and revision 1
-  /* [191] */
-  *(volatile uint32_t *) 0x40001740 =
-                  ((*((volatile uint32_t *) 0x40001740)) & 0x7FFFFFFF);
-  #endif
+    #if(RADIO_REV_C_OR_RADIO_REV_1) //for radio chip revision c and revision 1
+    /* [191] */
+    *(volatile uint32_t *) 0x40001740 =
+                    ((*((volatile uint32_t *) 0x40001740)) & 0x7FFFFFFF);
+    #endif /* RADIO_REV_C_OR_RADIO_REV_1 */
+  
   #elif (RADIO_MODE_CONF == RADIO_MODE_MODE_Ble_LR125Kbit || RADIO_MODE_CONF == RADIO_MODE_MODE_Ble_LR500Kbit)
-
+  
+  NRF_RADIO->PCNF1 = NRF_PCNF1; 
   NRF_RADIO->PCNF0 = NRF_PCNF0_CODED; 
   
   /* [164] */
   *(volatile uint32_t *)0x4000173C |= 0x80000000;
   *(volatile uint32_t *)0x4000173C =
                   ((*(volatile uint32_t *)0x4000173C & 0xFFFFFF00) | 0x5C);
-  #if(RADIO_REV_C_OR_RADIO_REV_1) //for radio chip revision c and revision 1
-  /* [191] */
-  *(volatile uint32_t *) 0x40001740 =
-                  ((*((volatile uint32_t *) 0x40001740)) & 0x7FFF00FF) |
-                  0x80000000 | (((uint32_t)(196)) << 8);
-  #endif
-  #endif
+    #if(RADIO_REV_C_OR_RADIO_REV_1) //for radio chip revision c and revision 1
+    /* [191] */
+    *(volatile uint32_t *) 0x40001740 =
+                    ((*((volatile uint32_t *) 0x40001740)) & 0x7FFF00FF) |
+                    0x80000000 | (((uint32_t)(196)) << 8);
+    #endif /* RADIO_REV_C_OR_RADIO_REV_1 */
 
-  NRF_RADIO->PCNF1 = NRF_PCNF1; 
+
+  #elif (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+  NRF_RADIO->PCNF1 = NRF_PCNF1_154; 
+  NRF_RADIO->PCNF0 = NRF_PCNF0_154; 
+
+  #endif /* RADIO_MODE_CONF */
+
 
   /* Configure default buffer */
   NRF_RADIO->PACKETPTR = (uint32_t)my_tx_buffer;
@@ -140,17 +157,26 @@ void my_radio_init(uint32_t* my_id, void* my_tx_buffer)
     NRF_RADIO->CRCCNF = 0x202; // Number of checksum bits
     NRF_RADIO->CRCINIT = 0x0UL;      /* CRC initial value */
   }
+  #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ble_1Mbit || RADIO_MODE_CONF == RADIO_MODE_MODE_Ble_2Mbit)
 
   NRF_RADIO->SHORTS = (RADIO_SHORTS_END_DISABLE_Enabled << RADIO_SHORTS_END_DISABLE_Pos);
+
+  #elif (RADIO_MODE_CONF == RADIO_MODE_MODE_Ble_LR125Kbit || RADIO_MODE_CONF == RADIO_MODE_MODE_Ble_LR500Kbit || RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+
+  NRF_RADIO->SHORTS = (RADIO_SHORTS_PHYEND_DISABLE_Enabled << RADIO_SHORTS_PHYEND_DISABLE_Pos);
+  
+  #endif
 
   #if !TRIGGER_RADIO_START_WITH_TIMER
   NRF_RADIO->SHORTS |= (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos);
   #endif
   
+  #if RADIO_MODE_CONF != RADIO_MODE_MODE_Ieee802154_250Kbit
   //RSSI shorts
   NRF_RADIO->SHORTS |= RADIO_SHORTS_ADDRESS_RSSISTART_Msk;
   NRF_RADIO->SHORTS |= RADIO_SHORTS_DISABLED_RSSISTOP_Msk;
-
+  
+  
   // NRF_RADIO->TEST       = (RADIO_TEST_CONST_CARRIER_Enabled << RADIO_TEST_CONST_CARRIER_Pos)
 	// 		                     | (RADIO_TEST_PLL_LOCK_Enabled << RADIO_TEST_PLL_LOCK_Pos);
 
@@ -173,8 +199,20 @@ void my_radio_init(uint32_t* my_id, void* my_tx_buffer)
   /* Use logical address 0 (prefix0 + base0) = 0x8E89BED6 when transmitting and receiving */
   NRF_RADIO->TXADDRESS = 0x00;
   NRF_RADIO->RXADDRESSES = 0x01;
-	/* Pre-defined channel: Address Event -> Timer0-TASK_CAPTURE[1] */
+
+  /* Pre-defined channel: Address Event -> Timer0-TASK_CAPTURE[1] */
 	NRF_PPI->CHEN |= (PPI_CHEN_CH26_Enabled << PPI_CHEN_CH26_Pos);
+
+  #else /* RADIO_MODE_CONF != RADIO_MODE_MODE_Ieee802154_250Kbit */
+  NRF_RADIO->SFD = 0xA7uL; //default SFD for 802.15.4, no need to set it explicitly
+  // NRF_RADIO->SFD = 0xAeuL; //custom SFD for 802.15.4
+
+  /* PPI channel: Frame Event -> Timer0-TASK_CAPTURE[1]
+  There is no Address Event with 802.15.4 */
+	NRF_PPI->CHEN |= (1 << RADIO_FRAME_EVENT_PPI_CH);
+
+  #endif /* RADIO_MODE_CONF != RADIO_MODE_MODE_Ieee802154_250Kbit */
+  
 
   my_radio_get_id(my_id);
 
@@ -246,7 +284,9 @@ void my_radio_off_completely(void)
   NRF_RADIO->EVENTS_ADDRESS = 0U;
   NRF_RADIO->EVENTS_PAYLOAD = 0U;
   NRF_RADIO->EVENTS_READY = 0U;
-
+  NRF_RADIO->EVENTS_FRAMESTART = 0U;
+  NRF_RADIO->EVENTS_PHYEND = 0U;
+  
   #if NRF_RADIO_DEBUG_STATE
   NRF_PPI->CHEN &= ~(1 << RADIO_T0_TX_EVENT_PPI_CH); //disable TXen debug pin PPI
   NRF_PPI->CHEN &= ~(1 << RADIO_T0_RX_EVENT_PPI_CH); //disable RXen debug pin PPI
@@ -284,6 +324,8 @@ void my_radio_off_to_tx(void)
   NRF_RADIO->EVENTS_END = 0U;
   NRF_RADIO->EVENTS_ADDRESS = 0U;
   NRF_RADIO->EVENTS_READY = 0U;
+  NRF_RADIO->EVENTS_FRAMESTART = 0U;
+  NRF_RADIO->EVENTS_PHYEND = 0U;
   NRF_RADIO->TXPOWER = nrf_tx_power;
 }
 /*---------------------------------------------------------------------------*/
@@ -325,6 +367,8 @@ void my_radio_off_to_rx(void)
   NRF_RADIO->EVENTS_ADDRESS = 0U;
   NRF_RADIO->EVENTS_PAYLOAD = 0U;
   NRF_RADIO->EVENTS_READY = 0U;
+  NRF_RADIO->EVENTS_FRAMESTART = 0U;
+  NRF_RADIO->EVENTS_PHYEND = 0U;
 
   #if NRF_RADIO_DEBUG_STATE
   NRF_PPI->CHEN |= (1 << RADIO_T0_RX_EVENT_PPI_CH); //enable RXen debug pin PPI
@@ -498,6 +542,11 @@ output_radio_events_gpio_init(void)
 
   NRF_PPI->CH[RTC_FIRE_PPI_CH].EEP = (uint32_t)&NRF_RTC1->EVENTS_COMPARE[1];
   NRF_PPI->CH[RTC_FIRE_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RTC_FIRE_GPIOTE_CH];
+
+  NRF_PPI->CH[RADIO_FRAME_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_FRAMESTART;
+  NRF_PPI->CH[RADIO_FRAME_EVENT_PPI_CH].TEP = (uint32_t)&NRF_TIMER0->TASKS_CAPTURE[1];
+
+
 
   //trick: RTC schedule function will trigger overflow event to mirror that on the GPIO for debugging purposes
   // NRF_PPI->CH[RTC_SCHEDULE_PPI_CH].EEP = (uint32_t)&NRF_RTC1->EVENTS_OVRFLW;
