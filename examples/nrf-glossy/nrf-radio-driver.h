@@ -94,7 +94,7 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
   #if NUMBER_OF_CHANNELS == 3
   extern const uint8_t ble_hopping_list[3];
   #define HOPPING_LIST ((uint8_t[3]){0,1,2,})
-  #define CHANNEL_LIST ( (uint8_t[NUMBER_OF_CHANNELS]){37,37,37,} )
+  #define CHANNEL_LIST ( (uint8_t[NUMBER_OF_CHANNELS]){37,38,39,} )
 
   #else
   extern const uint8_t ble_hopping_list[128];
