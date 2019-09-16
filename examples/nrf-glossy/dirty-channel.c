@@ -21,8 +21,10 @@
 #else
 #define ROUND_LEN ((NTX)+1)
 #endif /* NTX */
-#define RX_SLACK_T_US (1*RTIMER_SECOND/20 - ROUND_LEN * SLOT_LEN)
-#define ROUND_PERIOD (RX_SLACK_T_US + ROUND_LEN * SLOT_LEN)
+#ifndef ROUND_PERIOD_CONF_US
+#error "Define round period!"
+#endif
+#define ROUND_PERIOD (ROUND_PERIOD_CONF_US - ROUND_LEN * SLOT_LEN)
 /*---------------------------------------------------------------------------*/
 #define IBEACON_SIZE  (sizeof(ble_beacon_t))
 #define BLUETOOTH_BEACON_PDU(S) (8+(S))

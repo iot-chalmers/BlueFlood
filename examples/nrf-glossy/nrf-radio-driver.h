@@ -2,6 +2,7 @@
 #define _NRF_RADIO_DRIVER_H_
 
 #include "testbed.h"
+#define ROUND_PERIOD_CONF_US (RTIMER_SECOND/10)
 
 /*---------------------------------------------------------------------------*/
 #ifndef RADIO_MODE_CONF
@@ -179,8 +180,8 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 
 #elif RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit
 //all times assume 1/8Mbps --> 1 bit = 8 us
-#define EXTRA_TIME_ADDRESS_EVENT_T_TX_OFFSET (2126)//(7428-2869) //464.24us*16=7428
-#define EXTRA_TIME_TX_CHAIN_DELAY_US_X32 (164+880) //73.92us*16=1183 * 2 = 2365.44 ... -5 to compensate for variations
+#define EXTRA_TIME_ADDRESS_EVENT_T_TX_OFFSET (2126) //
+#define EXTRA_TIME_TX_CHAIN_DELAY_US_X32 (1044) //32.625us * 5
 
 #endif /* RADIO_MODE_CONF */
 
