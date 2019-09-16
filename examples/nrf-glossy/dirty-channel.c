@@ -234,7 +234,7 @@ PROCESS_THREAD(tx_process, ev, data)
   }
 
   // tt = 0;
-  t_start_round = RTIMER_NOW() + 2*GUARD_TIME;
+  t_start_round = RTIMER_NOW() + FIRST_SLOT_OFFSET;
   joined = 0;
   join_round = UINT16_MAX;
 
