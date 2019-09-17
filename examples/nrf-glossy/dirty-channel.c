@@ -89,9 +89,9 @@ static int get_testbed_index(uint32_t my_id, const uint32_t *testbed_ids, uint8_
 /*---------------------------------------------------------------------------*/
 static void init_ibeacon_packet(ble_beacon_t *pkt, const uint8_t* uuid, uint16_t round, uint16_t slot){
 #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
-    pkt->radio_len = sizeof(ble_beacon_t);
+    pkt->radio_len = sizeof(ble_beacon_t) - 1; /* execlude len field */
 #else
-  pkt->radio_len = sizeof(ble_beacon_t)-2; /* len + pdu_header */ //length of the rest of the packet
+  pkt->radio_len = sizeof(ble_beacon_t) - 2; /* len + pdu_header */ //length of the rest of the packet
 
 #endif
   pkt->pdu_header = 0x42; //pdu type: 0x02 ADV_NONCONN_IND, rfu 0, rx 0, tx 1 //2;
