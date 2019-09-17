@@ -160,6 +160,7 @@ void rtc_schedule(uint32_t ticks);
 PROCESS_THREAD(tx_process, ev, data)
 {
   static uint8_t my_turn = 0;
+  static uint8_t failed_rounds = 0;
   static int8_t my_index = -1;
   static uint16_t round = 0, slot = 0, logslot=0, join_round = -1, sync_slot = UINT16_MAX;
   static uint16_t rx_ok = 0, rx_crc_failed = 0, rx_none = 0, tx_done=0, 
@@ -284,7 +285,8 @@ PROCESS_THREAD(tx_process, ev, data)
       if(do_tx){
         msg.slot = slot;
         msg.round = round;
-
+        synced = 1; joined = 1;
+        guard_time = GUARD_TIME_SHORT;
         #if 0 //TWO_NODES_EXPERIMENT
         if(IS_INITIATOR()){
           static int turn;
@@ -331,7 +333,6 @@ PROCESS_THREAD(tx_process, ev, data)
         //memcpy(my_tx_buffer, &msg, sizeof(msg));
         schedule_tx_abs(tx_msg, GET_CHANNEL(round,slot), tt - ADDRESS_EVENT_T_TX_OFFSET + ARTIFICIAL_TX_OFFSET);
         //memset(my_tx_buffer, 0, sizeof(my_tx_buffer));
-        synced = 1; joined = 1;
         // while(!NRF_TIMER0->EVENTS_COMPARE[0]){watchdog_periodic();};
         BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, RX_SLOT_LEN);
         if(!NRF_TIMER0->EVENTS_COMPARE[0]){
@@ -509,17 +510,7 @@ PROCESS_THREAD(tx_process, ev, data)
         rx_none += (!got_address_event || !got_end_event) && !last_rx_ok;
         rx_ts_delta[logslot] = get_rx_ts() - TX_CHAIN_DELAY - tt;
         rx_rssi[logslot] = get_rx_rssi();
-        static uint8_t failed_rounds = 0;
-        if(rx_ok == 0){
-          //did not receive for X round: resync
-          failed_rounds++;
-          if(failed_rounds > 10){
-            joined = 0;
-            failed_rounds = 0;
-          }
-        } else {
-          failed_rounds = 0;
-        }
+
         if(last_rx_ok && !last_crc_is_ok){
           corrupt_msg_index |= (1UL << logslot);
           #if PRINT_LAST_RX
@@ -548,7 +539,7 @@ PROCESS_THREAD(tx_process, ev, data)
     my_radio_off_completely();
     // nrf_gpio_cfg_output(ROUND_INDICATOR_PIN);
     nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
-
+    
     rx_ok_total += rx_ok;
     berr_total += berr;
     rx_failed_total += rx_crc_failed + rx_none;
@@ -655,6 +646,20 @@ PROCESS_THREAD(tx_process, ev, data)
               round, my_id, my_index, tx_node_id, (int8_t)BLE_DEFAULT_RF_POWER, BLE_DEFAULT_CHANNEL, 2400u+ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL], OVERRIDE_BLE_CHANNEL_37 ? "not std" : "std", sizeof(ble_beacon_t), RADIO_MODE_TO_STR(RADIO_MODE_CONF), TEST_CE, FIRMWARE_TIMESTAMP_STR);
     }
     #endif
+
+    if(rx_ok == 0){
+      //did not receive for X round: resync
+      if(failed_rounds > 10){
+        synced = 0;
+        joined = 0;
+      }
+      failed_rounds++;
+      printf("{fr-%d} RX Ok %d, failed rounds %d, joined %d, synced %d\n", (int)round, (int)rx_ok, (int)failed_rounds, (int)joined, (int)synced);
+    } else {
+      failed_rounds = 0;
+      rx_ok = 0;
+    }
+
     round++;
     init_ibeacon_packet(&msg, &uuids_array[0][0], round, slot);
     //msg.round=round;
@@ -669,7 +674,9 @@ PROCESS_THREAD(tx_process, ev, data)
       round_is_late = check_timer_miss(t_start_round, ROUND_PERIOD-TIMER_GUARD, now);
       t_start_round += ROUND_PERIOD;
     }
-  
+    
+
+
   #if BLUEFLOOD_BUSYWAIT
     /* wait at the end of the round */
     NRF_TIMER0->CC[0] = t_start_round - FIRST_SLOT_OFFSET;;
