@@ -672,7 +672,7 @@ PROCESS_THREAD(tx_process, ev, data)
   
   #if BLUEFLOOD_BUSYWAIT
     /* wait at the end of the round */
-    NRF_TIMER0->CC[0] = t_start_round;
+    NRF_TIMER0->CC[0] = t_start_round - FIRST_SLOT_OFFSET;;
     while(!NRF_TIMER0->EVENTS_COMPARE[0]){
       watchdog_periodic();
     }
