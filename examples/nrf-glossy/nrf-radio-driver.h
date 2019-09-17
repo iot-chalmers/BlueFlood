@@ -181,7 +181,7 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 #elif RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit
 //all times assume 1/8Mbps --> 1 bit = 8 us
 #define EXTRA_TIME_ADDRESS_EVENT_T_TX_OFFSET (2126) //
-#define EXTRA_TIME_TX_CHAIN_DELAY_US_X32 (1044) //32.625us * 5
+#define EXTRA_TIME_TX_CHAIN_DELAY_US_X32 (1044-4) //32.625us * 5
 
 #endif /* RADIO_MODE_CONF */
 
