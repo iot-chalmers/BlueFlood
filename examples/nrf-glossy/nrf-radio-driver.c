@@ -25,7 +25,7 @@
 /* RF center frequency for each channel index (offset from 2400 MHz), spacing is 5MHz for 15.4 -- not standard!, but channels with indices 11--26 are standard 
 fc = 2405 + 5 × (Channel Number − 11), nrf frequency setting is an offset to 2400MHz */
 const uint8_t ble_hw_frequency_channels[40] = {
-  0,5,85,90,95,25,30,35,40,45,0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,85,90,95,0,85,90,95,5,80,25
+  0,5,85,90,95,25,30,35,40,45,0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,85,90,95,0,85,90,95,BLE_CHANNEL_37_FREQ,80,25
 };
 #else
 /* RF center frequency for each channel index (offset from 2400 MHz), spacing is 2MHz for BLE */

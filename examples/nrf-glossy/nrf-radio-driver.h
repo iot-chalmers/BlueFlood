@@ -70,7 +70,11 @@
 #if OVERRIDE_BLE_CHANNEL_37
 #define BLE_CHANNEL_37_FREQ 98 /* 2498MHz, outside BLE, WiFi and ZigBee channels */
 #else
-#define BLE_CHANNEL_37_FREQ 2 /* 2402MHz, standard */
+  #if RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit
+  #define BLE_CHANNEL_37_FREQ 2 /* 2402MHz, standard */
+  #else
+  #define BLE_CHANNEL_37_FREQ 5 /* 2405MHz, channel 11 - standard */
+  #endif /* RADIO_MODE_MODE_Ieee802154_250Kbit */
 #endif /* OVERRIDE_BLE_CHANNEL_37 */
 #ifndef BLE_DEFAULT_CHANNEL
 #define BLE_DEFAULT_CHANNEL 37
