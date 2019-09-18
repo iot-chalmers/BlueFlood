@@ -353,7 +353,7 @@ PROCESS_THREAD(tx_process, ev, data)
           }
         }
         rx_ts_delta[logslot] = get_rx_ts() - tt;
-        rx_rssi[logslot] = get_rx_rssi();
+        rx_rssi[logslot] = get_radio_rssi();
       } else if(do_rx){
         static int join_trial = 0;
         uint8_t got_payload_event, got_address_event, got_end_event, slot_started;
@@ -510,7 +510,7 @@ PROCESS_THREAD(tx_process, ev, data)
         }
         rx_none += (!got_address_event || !got_end_event) && !last_rx_ok;
         rx_ts_delta[logslot] = get_rx_ts() - TX_CHAIN_DELAY - tt;
-        rx_rssi[logslot] = get_rx_rssi();
+        rx_rssi[logslot] = get_rx_rssi(&my_rx_buffer);
 
         if(last_rx_ok && !last_crc_is_ok){
           corrupt_msg_index |= (1UL << logslot);

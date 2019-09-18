@@ -314,12 +314,17 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
   } while(0)
 
 #define MAX(A,B) (((A)>(B))? (A) : (B))
-#define get_rx_rssi() ((int8_t)(-(int8_t)(NRF_RADIO->RSSISAMPLE)))
+
+#define get_radio_rssi() ((int8_t)(-(int8_t)(NRF_RADIO->RSSISAMPLE)))
+
 #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
-#define get_rx_ts() (NRF_TIMER0->CC[TIMESTAMP_ADDR_REG] - 1) //correct for custom PPI channel latency
+  #define get_rx_ts() (NRF_TIMER0->CC[TIMESTAMP_ADDR_REG] - 1) //correct for custom PPI channel latency
+  #define get_rx_rssi(MSG) ((MSG==0)? get_radio_rssi() : ((ble_beacon_t *)(MSG))->lqi)
 #else
-#define get_rx_ts() (NRF_TIMER0->CC[TIMESTAMP_ADDR_REG])
+  #define get_rx_ts() (NRF_TIMER0->CC[TIMESTAMP_ADDR_REG])
+  #define get_rx_rssi(MSG) get_radio_rssi()
 #endif
+
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define AT __FILE__ ":" TOSTRING(__LINE__)
