@@ -38,7 +38,7 @@
 /* Log config */
 #define TESTBED_LOG_STYLE (TESTBED!=WIRED_TESTBED)
 #define PRINT_TS_DELTA true
-#define PRINT_RSSI false
+#define PRINT_RSSI true
 #define PRINT_LAST_RX false
 #define PRINT_RX_STATS false
 #define PRINT_NODE_CONFIG true
