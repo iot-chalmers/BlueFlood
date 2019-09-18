@@ -43,6 +43,7 @@
 #define PRINT_RX_STATS false
 #define PRINT_NODE_CONFIG true
 #define PRINT_CUSTOM_DEBUG_MSG false
+#define PRINT_NODE_REJOIN_WARNING false
 #ifndef FIRMWARE_TIMESTAMP_STR
 #define FIRMWARE_TIMESTAMP_STR (__DATE__ " " __TIME__)
 #endif
@@ -652,9 +653,11 @@ PROCESS_THREAD(tx_process, ev, data)
       if(failed_rounds > 10){
         synced = 0;
         joined = 0;
+        #if PRINT_NODE_REJOIN_WARNING
+        printf("{fr-%d} Rejoining: failed rounds %d, joined %d, synced %d\n", (int)round, (int)failed_rounds, (int)joined, (int)synced);
+        #endif
       }
       failed_rounds++;
-      printf("{fr-%d} RX Ok %d, failed rounds %d, joined %d, synced %d\n", (int)round, (int)rx_ok, (int)failed_rounds, (int)joined, (int)synced);
     } else {
       failed_rounds = 0;
       rx_ok = 0;
