@@ -74,14 +74,20 @@ void my_radio_init(uint32_t* my_id, void* my_tx_buffer)
   NRF_RADIO->FREQUENCY = ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL];
   NRF_RADIO->DATAWHITEIV = BLE_DEFAULT_CHANNEL;     /* This value needs to correspond to the channel being used */
 
+  #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
+  #define RADIO_MODECNF0_DTX_MYMODE RADIO_MODECNF0_DTX_Center
+  #else
+  #define RADIO_MODECNF0_DTX_MYMODE RADIO_MODECNF0_DTX_Center
+  #endif
+  
   #ifdef NRF51
-  NRF_RADIO->MODECNF0 = (RADIO_MODECNF0_DTX_Center << RADIO_MODECNF0_DTX_Pos);
+  NRF_RADIO->MODECNF0 = (RADIO_MODECNF0_DTX_MYMODE << RADIO_MODECNF0_DTX_Pos);
   //nrf_radio_set_radio_mode(RADIO_MODE_MODE_Nrf_1Mbit);
   nrf_radio_set_radio_mode(RADIO_MODE_CONF);
 
   #else 
   NRF_RADIO->MODECNF0 = (RADIO_MODECNF0_RU_Fast << RADIO_MODECNF0_RU_Pos) 
-                      | (RADIO_MODECNF0_DTX_Center << RADIO_MODECNF0_DTX_Pos);
+                      | (RADIO_MODECNF0_DTX_MYMODE << RADIO_MODECNF0_DTX_Pos);
                       //Note: For 802.15.4 and BLE LR mode, only DTX_Center is a valid setting
   NRF_RADIO->MODE = RADIO_MODE_CONF;
   #endif
