@@ -84,8 +84,10 @@ JLINK := $(NRF_JLINK_PATH)/JLinkExe
 JLINKGDBSERVER	= $(NRF_JLINK_PATH)/JLinkGDBServer
 
 JLINK_OPTS = -Device $(NRFDEV5X) -if swd -speed 8000
+JLINK_SCRIPT_OPTS=-f nrf52
 ifneq ($(NRF_JLINK_SN),)
 JLINK_OPTS += -SelectEmuBySN $(NRF_JLINK_SN)
+JLINK_SCRIPT_OPTS += --snr $(NRF_JLINK_SN)
 endif
 
 FLASH_START_ADDRESS		= 0x0
@@ -224,7 +226,7 @@ size:
 ## Program device/Reset device
 upload: 
 	@echo "Uploading $(FIRMWARE)"
-	sh $(NRF_PROG_SCRIPT) -f nrf52 --flash $(FIRMWARE)
+	sh $(NRF_PROG_SCRIPT) $(JLINK_SCRIPT_OPTS) --flash $(FIRMWARE)
 	
 rm.jlink2:
 	-rm -rf *.jlink
@@ -237,10 +239,10 @@ upload.jlink2:
 
 %.flash: %.hex
 	@echo Flashing: $^
-	sh $(NRF_PROG_SCRIPT) -f nrf52 --flash $*.hex 
+	sh $(NRF_PROG_SCRIPT) $(JLINK_SCRIPT_OPTS) --flash $*.hex 
 
 erase:
-	sh $(NRF_PROG_SCRIPT) -f nrf52 --erase-all
+	sh $(NRF_PROG_SCRIPT) $(JLINK_SCRIPT_OPTS) --erase-all
 
 upload-softdevice: rm.jlink upload-softdevice.jlink2
 	@echo "Convert from hex to binary. Split original hex in two to avoid huge (>250 MB) binary file with just 0s. "
@@ -254,7 +256,7 @@ upload-softdevice.jlink2:
 	echo "w4 4001e504 1\nloadbin \"$(PWD)/_mainpart.bin\" 0\nloadbin \"$(PWD)/_uicr.bin\" 0x10001000\nr\ng\nexit\n" > $(PWD)/upload-softdevice.jlink2
 
 reset: 
-	sh $(NRF_PROG_SCRIPT) -f nrf52 --reset
+	sh $(NRF_PROG_SCRIPT)  --reset
 
 reset.jlink2:
 	printf "r\ng\nexit\n" > reset.jlink2
