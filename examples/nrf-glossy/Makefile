@@ -151,41 +151,14 @@ date:
 sync-logs:
 	rsync --progress -avz ./ble-glossy-logs-scripts/ /Volumes/beshr/beshr/ble-glossy-logs-scripts/
 
-##read the serial port of the node
-see4:
-	picocom -fh -b 230400 --imap lfcrlf /dev/tty.usbmodem1422541
-
 programext:
 	#make dirty-channel.flash MOTE=100
 	ls -db /Volumes/DAPLINK*/ | gxargs -n 1 -d '\n' cp dirty-channel.hex 
 
-programall:
-	make dirty-channel.flash MOTE=4
-	make dirty-channel.flash MOTE=5
-	make dirty-channel.flash MOTE=6
-	make dirty-channel.flash MOTE=7
-	#for BLEnano boards: copy the firmware
-	ls -db /Volumes/MBED*/ | gxargs -n 1 -d '\n' cp dirty-channel.hex 
-
-p20:
-	make dirty-channel.flash MOTE=20
-
-p21:
-	make dirty-channel.flash MOTE=21
-
-p22:
-	make dirty-channel.flash MOTE=22
-
-p23:
-	make dirty-channel.flash MOTE=23
-
-p24:
-	make dirty-channel.flash MOTE=24
-
-log21:
+logcommit:
 	rm -f exp-logs/exp$(EXP).log
 	touch exp-logs/exp$(EXP).log
-	picocom -fh -b $(uartbr) --imap lfcrlf /dev/tty.usbmodem0006838083821 | tee exp-logs/exp$(EXP).log
+	picocom -fh -b $(uartbr) --imap lfcrlf /dev/${uart_device} | tee exp-logs/exp$(EXP).log
 	git add -f exp-logs/exp$(EXP).log
 	git commit -m"exp$(EXP).log"
 
@@ -195,26 +168,26 @@ log:
 program:
 	make FIRMWARE=$(CONTIKI_PROJECT).hex upload 
 
+flashall:
+	for M in 10 11 12 13 ; do \
+		echo $$M ; \
+		make MOTE=$$M FIRMWARE=$(CONTIKI_PROJECT).hex upload ; \
+	done
 
-doall: clean all programall
-
-doallv5: clean all p20 p21 p22 p24 resetall
+doall: clean all flashall resetall
 
 compile: clean all
 
-reset20:
-	make reset MOTE=20
-
 resetall: 
-	make reset MOTE=20
-	make reset MOTE=21
-	make reset MOTE=22
-	make reset MOTE=24
+	for M in 10 11 12 13 ; do \
+		echo $$M ; \
+		make MOTE=$$M reset ; \
+	done
 
-log21timeout:
+logtimeoutcommit:
 	rm -f exp-logs/exp$(EXP).log
 	touch exp-logs/exp$(EXP).log
-	gtimeout -s ABRT --kill-after=$$((${DURATION}+2)) --foreground $(DURATION) picocom --noreset -fh -b $(uartbr) --imap lfcrlf /dev/tty.usbmodem0006838083821 --logfile ./exp-logs/exp$(EXP).log	
+	gtimeout -s ABRT --kill-after=$$((${DURATION}+2)) --foreground $(DURATION) picocom --noreset -fh -b $(uartbr) --imap lfcrlf /dev/${uart_device} --logfile ./exp-logs/exp$(EXP).log	
 	git add -f exp-logs/exp$(EXP).log
 	git commit -m"exp$(EXP).log"
 
