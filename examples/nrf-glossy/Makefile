@@ -186,6 +186,12 @@ flashall:
 		make MOTE=$$M FIRMWARE=$(CONTIKI_PROJECT).hex upload ; \
 	done
 
+eraseall:
+	for M in 10 11 12 13 ; do \
+		echo $$M ; \
+		make MOTE=$$M erase ; \
+	done
+
 doall: clean all flashall resetall
 
 compile: clean all
