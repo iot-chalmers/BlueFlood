@@ -89,6 +89,18 @@ endif
 ifeq ($(MOTE),7)
 NRF_JLINK_SN=681471568
 endif
+ifeq ($(MOTE),10)
+NRF_JLINK_SN=683897098
+endif
+ifeq ($(MOTE),11)
+NRF_JLINK_SN=683062141
+endif
+ifeq ($(MOTE),12)
+NRF_JLINK_SN=683844332
+endif
+ifeq ($(MOTE),13)
+NRF_JLINK_SN=683582322
+endif
 ifeq ($(MOTE),20)
 NRF_JLINK_SN=683570809
 endif
