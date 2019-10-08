@@ -22,7 +22,7 @@ $(info $(CONTIKI_TARGET_SOURCEFILES))
 
 CONTIKI_SOURCEFILES += $(CONTIKI_TARGET_SOURCEFILES)
 
-CLEAN += *.$(TARGET) *.jlink
+CLEAN += *.$(TARGET) *.jlink *.hex
 
 ### Unless the example dictates otherwise, build with code size optimisations
 ifndef SMALL

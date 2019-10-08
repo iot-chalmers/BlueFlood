@@ -74,13 +74,15 @@ CLEAN += *.d *.elf *.hex *.bin
 ###
 #JLINK_DIR 		= /Applications/SEGGER/JLink/
 #JLINK 			= $(JLINK_DIR)JLinkExe
-JLINKGDBSERVER	= $(JLINK_DIR)JLinkGDBServer
 
+NRF_PROG_SCRIPT=$(CONTIKI_CPU)/nrfjprog.sh
 NRF_JLINK_PATH=$(shell location=$$(which JLinkExe) && dirname $$location)
 NRFDEV5X := NRF52
 
 # JLink
 JLINK := $(NRF_JLINK_PATH)/JLinkExe
+JLINKGDBSERVER	= $(NRF_JLINK_PATH)/JLinkGDBServer
+
 JLINK_OPTS = -Device $(NRFDEV5X) -if swd -speed 8000
 ifneq ($(NRF_JLINK_SN),)
 JLINK_OPTS += -SelectEmuBySN $(NRF_JLINK_SN)
@@ -216,14 +218,13 @@ CUSTOM_RULE_LINK=0
 	cp $< $@
 
 ## Find out the size of the compiled file 
-size : 
+size: 
 	$(SIZE) $(TARGET_SIZE)
 
 ## Program device/Reset device
-upload: rm.jlink2 upload.jlink2 
-	@echo "Starting uploading"
-	$(JLINK) upload.jlink2
-	@echo "Done uploading"
+upload: 
+	@echo "Uploading $(FIRMWARE)"
+	sh $(NRF_PROG_SCRIPT) -f nrf52 --flash $(FIRMWARE)
 	
 rm.jlink2:
 	-rm -rf *.jlink
@@ -234,12 +235,12 @@ upload.jlink2:
 %.jlink:
 	sed -e 's/#OUTPUT_FILENAME#/$*.hex/' $(CONTIKI_CPU)/flash.jlink > $@
 
-%.flash: %.hex %.jlink
+%.flash: %.hex
 	@echo Flashing: $^
-	$(JLINK) $(JLINK_OPTS) -CommanderScript $*.jlink
+	sh $(NRF_PROG_SCRIPT) -f nrf52 --flash $*.hex 
 
 erase:
-	$(JLINK) $(JLINK_OPTS) -CommanderScript $(CONTIKI_CPU)/erase.jlink
+	sh $(NRF_PROG_SCRIPT) -f nrf52 --erase-all
 
 upload-softdevice: rm.jlink upload-softdevice.jlink2
 	@echo "Convert from hex to binary. Split original hex in two to avoid huge (>250 MB) binary file with just 0s. "
@@ -252,8 +253,8 @@ upload-softdevice.jlink2:
 	@echo " Resetting in between is needed to disable the protections. "
 	echo "w4 4001e504 1\nloadbin \"$(PWD)/_mainpart.bin\" 0\nloadbin \"$(PWD)/_uicr.bin\" 0x10001000\nr\ng\nexit\n" > $(PWD)/upload-softdevice.jlink2
 
-reset: reset.jlink2
-	$(JLINK) $(JLINK_OPTS) -CommanderScript reset.jlink2
+reset: 
+	sh $(NRF_PROG_SCRIPT) -f nrf52 --reset
 
 reset.jlink2:
 	printf "r\ng\nexit\n" > reset.jlink2

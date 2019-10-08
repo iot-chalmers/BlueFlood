@@ -193,7 +193,8 @@ log:
 	picocom -fh -b $(uartbr) --imap lfcrlf /dev/${uart_device} | tee exp-logs/exp$(EXP).log
 
 program:
-	make dirty-channel.flash
+	make FIRMWARE=$(CONTIKI_PROJECT).hex upload 
+
 
 doall: clean all programall
 
