@@ -278,9 +278,14 @@ PROCESS_THREAD(tx_process, ev, data)
       logslot = slot + 1;
       tt = t_start_round + slot * SLOT_LEN;
       // BUSYWAIT_UNTIL(1, tt - guard_time);
-      // do_tx = (IS_INITIATOR() && !rx_ok && (slot % 2)) || (!IS_INITIATOR() && synced && (slot > 1) && my_turn);
-      do_tx = (IS_INITIATOR() /*&& slot < 2*/) || (!IS_INITIATOR() && synced && my_turn);
-
+      #if ROUND_ROBIN_INITIATOR
+      do_tx = ( IS_INITIATOR() && (joined || (slot % 2 == 0))) || (!IS_INITIATOR() && synced && my_turn);
+      #else
+      do_tx = (IS_INITIATOR() && !synced && (slot % 2 == 0)) || (!IS_INITIATOR() && synced && (slot > 0) && my_turn);
+      // do_tx = (IS_INITIATOR() && (slot < 4) && (slot % 2 == 0)) || (!IS_INITIATOR() && synced && my_turn && (slot % 2 != 0));
+      // do_tx = (IS_INITIATOR()) || (!IS_INITIATOR() && synced && my_turn);
+      #endif /* ROUND_ROBIN_INITIATOR */
+      
       //do_tx = my_id == tx_node_id;
       do_rx = !do_tx;
       if(do_tx){
