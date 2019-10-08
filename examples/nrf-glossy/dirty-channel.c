@@ -286,7 +286,7 @@ PROCESS_THREAD(tx_process, ev, data)
       if(do_tx){
         msg.slot = slot;
         msg.round = round;
-        synced = 1; joined = 1;
+        joined = 1;
         guard_time = GUARD_TIME_SHORT;
         #if 0 //TWO_NODES_EXPERIMENT
         if(IS_INITIATOR()){
@@ -458,19 +458,21 @@ PROCESS_THREAD(tx_process, ev, data)
               if(!synced){
                 guard_time = GUARD_TIME_SHORT;
                 synced = 1;
-                slot = rx_pkt->slot;
-                logslot=slot+1;
-                round = rx_pkt->round;
-                sync_slot = slot;
-                t_start_round = get_rx_ts() - TX_CHAIN_DELAY - slot * SLOT_LEN;
-                my_turn = (rx_pkt->turn == my_index) || (rx_pkt->turn == MSG_TURN_BROADCAST);
-                #if 0
-                printf("pkt: ");
-                for(i=0; i<sizeof(my_rx_buffer); i++){
-                  printf("%d, ", my_rx_buffer[i]);
+                if(!IS_INITIATOR()){
+                  slot = rx_pkt->slot;
+                  logslot = slot + 1;
+                  round = rx_pkt->round;
+                  sync_slot = slot;
+                  t_start_round = get_rx_ts() - TX_CHAIN_DELAY - slot * SLOT_LEN;
+                  my_turn = (rx_pkt->turn == my_index) || (rx_pkt->turn == MSG_TURN_BROADCAST);
+                  #if 0
+                  printf("pkt: ");
+                  for(i=0; i<sizeof(my_rx_buffer); i++){
+                    printf("%d, ", my_rx_buffer[i]);
+                  }
+                  printf("\n");
+                  #endif
                 }
-                printf("\n");
-                #endif
               }
               if(sync_slot == UINT16_MAX){ //for the initiator
                 sync_slot = rx_pkt->slot;
