@@ -50,7 +50,18 @@
 
 #define PACKET_HEADER_AIR_TIME(M) US_TO_RTIMERTICKS( (M==RADIO_MODE_MODE_Ble_1Mbit) ? 8+4*8 : ((M==RADIO_MODE_MODE_Ble_2Mbit) ? 8+4*8*2 : ((M==RADIO_MODE_MODE_Ble_LR500Kbit) || (M==RADIO_MODE_MODE_Ble_LR125Kbit) ? 80+256+16+24 : ((M==RADIO_MODE_MODE_Ieee802154_250Kbit) ? 160 : 0))) )
 
-#define PACKET_CRC_FOOTER_AIR_TIME(M) ((US_TO_RTIMERTICKS(4*CRC_LEN*BLE_MODE_BIT_TIME_X2(M))) + 3*BLE_MODE_BIT_TIME_X2(M)*((M==RADIO_MODE_MODE_Ble_LR500Kbit)||(M==RADIO_MODE_MODE_Ble_LR125Kbit))/2)
+#define PACKET_CRC_FOOTER_AIR_TIME(M) (\
+( \
+  US_TO_RTIMERTICKS( CRC_LEN*BLE_MODE_BIT_TIME_X2(M) + \
+    ( \
+      (M==RADIO_MODE_MODE_Ble_LR500Kbit) \
+      || (M==RADIO_MODE_MODE_Ble_LR125Kbit) \
+    ) ? \
+    3*BLE_MODE_BIT_TIME_X2(M) \
+    : \
+    0 \
+  ) \
+)/2 )
 
 #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
 //CRC is considered part of payload, so do not count it twice

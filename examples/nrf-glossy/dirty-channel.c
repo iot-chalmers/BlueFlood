@@ -429,7 +429,8 @@ PROCESS_THREAD(tx_process, ev, data)
           if(got_address_event) {
             #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
             //no EVENTS_PAYLOAD is emitted
-            BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_END != 0U, get_rx_ts() + PAYLOAD_AIR_TIME_MIN + CRC_AIR_T);
+            // PAYLOAD_AIR_TIME_MIN includes CRC
+            BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_END != 0U, get_rx_ts() + PAYLOAD_AIR_TIME_MIN);
 
             got_end_event = NRF_RADIO->EVENTS_END;
             last_rx_ok = got_payload_event = got_end_event;
