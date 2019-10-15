@@ -186,6 +186,12 @@ flashall:
 		make MOTE=$$M FIRMWARE=$(CONTIKI_PROJECT).hex upload ; \
 	done
 
+flashtable:
+	for M in 20 24 21 22 ; do \
+		echo $$M ; \
+		make MOTE=$$M FIRMWARE=$(CONTIKI_PROJECT).hex upload ; \
+	done
+
 eraseall:
 	for M in 10 11 12 13 ; do \
 		echo $$M ; \
