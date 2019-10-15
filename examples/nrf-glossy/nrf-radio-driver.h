@@ -32,7 +32,7 @@
 #define MY_ADV_ADDRESS_HI 0xB0B0U
 #endif
 /*---------------------------------------------------------------------------*/
-#define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(50)
+#define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(75)
 #define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(0))
 #define GUARD_TIME (US_TO_RTIMERTICKS(32))
 /*---------------------------------------------------------------------------*/
