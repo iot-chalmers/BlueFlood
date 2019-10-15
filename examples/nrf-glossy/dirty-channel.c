@@ -340,7 +340,7 @@ PROCESS_THREAD(tx_process, ev, data)
         schedule_tx_abs(tx_msg, GET_CHANNEL(round,slot), tt - ADDRESS_EVENT_T_TX_OFFSET + ARTIFICIAL_TX_OFFSET);
         //memset(my_tx_buffer, 0, sizeof(my_tx_buffer));
         // while(!NRF_TIMER0->EVENTS_COMPARE[0]){watchdog_periodic();};
-        BUSYWAIT_UNTIL(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, RX_SLOT_LEN);
+        BUSYWAIT_UNTIL_ABS(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, tt - ADDRESS_EVENT_T_TX_OFFSET + ARTIFICIAL_TX_OFFSET);
         if(!NRF_TIMER0->EVENTS_COMPARE[0]){
           tx_status[logslot] = 'T';
         } else {
@@ -348,7 +348,7 @@ PROCESS_THREAD(tx_process, ev, data)
             nrf_gpio_pin_toggle(SLOT1_INDICATOR_PIN);
             // nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
           }
-          BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_END != 0U, RX_SLOT_LEN);
+          BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_END != 0U, tt + ARTIFICIAL_TX_OFFSET + PACKET_AIR_TIME_MIN);
           if(!NRF_RADIO->EVENTS_END){
             tx_status[logslot] = 'R';
           } else {
@@ -441,7 +441,7 @@ PROCESS_THREAD(tx_process, ev, data)
             got_payload_event = NRF_RADIO->EVENTS_PAYLOAD;
             last_rx_ok = got_payload_event;
             if(got_payload_event){
-              BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_END != 0U, CRC_AIR_T);
+              BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_END != 0U, get_rx_ts() + PAYLOAD_AIR_TIME_MIN + CRC_AIR_T);
               got_end_event = NRF_RADIO->EVENTS_END;
               last_crc_is_ok = USE_HAMMING_CODE || ((got_end_event != 0U) && (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk));
             }
