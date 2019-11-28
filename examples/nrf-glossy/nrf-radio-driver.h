@@ -32,9 +32,12 @@
 #define MY_ADV_ADDRESS_HI 0xB0B0U
 #endif
 /*---------------------------------------------------------------------------*/
-#define SLOT_PROCESSING_TIME US_TO_RTIMERTICKS(75)
-#define GUARD_TIME_SHORT (US_TO_RTIMERTICKS(0))
-#define GUARD_TIME (US_TO_RTIMERTICKS(32))
+#define SLOT_PROCESSING_TIME_PKT_END    (US_TO_RTIMERTICKS(8))
+#define SLOT_PROCESSING_TIME_PKT_START  (US_TO_RTIMERTICKS(80))
+#define SLOT_PROCESSING_TIME  (SLOT_PROCESSING_TIME_PKT_END + SLOT_PROCESSING_TIME_PKT_START)   
+
+#define GUARD_TIME_SHORT                (US_TO_RTIMERTICKS(0))
+#define GUARD_TIME                      (US_TO_RTIMERTICKS(32))
 /*---------------------------------------------------------------------------*/
 #ifndef RADIO_TEST_TX_CARRIER
 #define RADIO_TEST_TX_CARRIER false

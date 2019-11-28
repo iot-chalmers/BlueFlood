@@ -285,8 +285,6 @@ void my_radio_off_completely(void)
 
   /* Disable radio */
   NRF_RADIO->TASKS_DISABLE = 1U;
-  BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_DISABLED != 0U, US_TO_RTIMERTICKS(10)); //arbitrary timeout
-  NRF_RADIO->EVENTS_DISABLED = 0U;
   NRF_RADIO->EVENTS_END = 0U;
   NRF_RADIO->EVENTS_ADDRESS = 0U;
   NRF_RADIO->EVENTS_PAYLOAD = 0U;
@@ -300,6 +298,8 @@ void my_radio_off_completely(void)
   #endif /* NRF_RADIO_DEBUG_STATE */
 
   NRF_RADIO->TXPOWER = nrf_tx_power;
+  BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_DISABLED != 0U, US_TO_RTIMERTICKS(2)); //arbitrary timeout
+  NRF_RADIO->EVENTS_DISABLED = 0U;
 }
 /*---------------------------------------------------------------------------*/
 void my_radio_off_to_tx(void)
@@ -326,14 +326,15 @@ void my_radio_off_to_tx(void)
   NRF_RADIO->EVENTS_DISABLED = 0U;
   /* Disable radio */
   NRF_RADIO->TASKS_DISABLE = 1U;
-  while(NRF_RADIO->EVENTS_DISABLED == 0U);
-  NRF_RADIO->EVENTS_DISABLED = 0U;
+
   NRF_RADIO->EVENTS_END = 0U;
   NRF_RADIO->EVENTS_ADDRESS = 0U;
   NRF_RADIO->EVENTS_READY = 0U;
   NRF_RADIO->EVENTS_FRAMESTART = 0U;
   NRF_RADIO->EVENTS_PHYEND = 0U;
   NRF_RADIO->TXPOWER = nrf_tx_power;
+  BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_DISABLED != 0U, US_TO_RTIMERTICKS(2)); //arbitrary timeout
+  NRF_RADIO->EVENTS_DISABLED = 0U;
 }
 /*---------------------------------------------------------------------------*/
 /* TX at t_abs */
@@ -368,8 +369,6 @@ void my_radio_off_to_rx(void)
   NRF_RADIO->EVENTS_DISABLED = 0U;
   /* Disable radio */
   NRF_RADIO->TASKS_DISABLE = 1U;
-  while(NRF_RADIO->EVENTS_DISABLED == 0U);
-  NRF_RADIO->EVENTS_DISABLED = 0U;
   NRF_RADIO->EVENTS_END = 0U;
   NRF_RADIO->EVENTS_ADDRESS = 0U;
   NRF_RADIO->EVENTS_PAYLOAD = 0U;
@@ -381,6 +380,10 @@ void my_radio_off_to_rx(void)
   NRF_PPI->CHEN |= (1 << RADIO_T0_RX_EVENT_PPI_CH); //enable RXen debug pin PPI
   NRF_PPI->CHEN &= ~(1 << RADIO_T0_TX_EVENT_PPI_CH); //disable TXen debug pin PPI
   #endif /* NRF_RADIO_DEBUG_STATE */
+  
+  BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_DISABLED != 0U, US_TO_RTIMERTICKS(2)); //arbitrary timeout
+  NRF_RADIO->EVENTS_DISABLED = 0U;
+
 }
 /*---------------------------------------------------------------------------*/
 void my_radio_send(uint8_t* buf, int channel) 
