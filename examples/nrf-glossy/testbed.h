@@ -121,8 +121,20 @@
 
 //#define TESTBED_IDS (uint32_t[]){0x7b150560UL, 0xddf8a17fUL, 0x8e28b37dUL, 0x1c30a5f9UL, 0x70f96a53UL, 0x5cfdb15UL, 0x724d2a67UL, 0x7475364dUL, 0x74231ca7UL, 0x2fa5d86eUL}
 //#define TESTBED_PI_IDS (uint8_t[]){4,5,6,7,8,10,20,21,22,28}
-#define TESTBED_IDS (uint32_t[]){mote20,mote21,mote22,mote24}
-#define TESTBED_PI_IDS (uint8_t[]){20,21,22,24} 
+#define TESTBED_IDS (uint32_t[]){\
+mote20,mote21,mote22,mote24,\
+mote20,mote21,mote22,mote24,\
+mote20,mote21,mote22,mote24,\
+mote20,mote21,mote22,mote24,\
+mote20,mote21,mote22,mote24\
+}
+#define TESTBED_PI_IDS (uint8_t[]){\
+20,21,22,24\
+20,21,22,24\
+20,21,22,24\
+20,21,22,24\
+20,21,22,24\
+} 
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
 
 #elif TESTBED==WIRED_TESTBED

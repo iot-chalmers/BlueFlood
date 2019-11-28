@@ -145,12 +145,32 @@ testbedschedule2:
 	ssh -p17122 testbed@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/testbed/newjob.nrf52.hex"
 
 testbedstart: 
-	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py status"
+	# ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py status"
 	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py start"
 
 testbedschedule: 
 	scp -P17122 $(FNAME).hex ban@sunlight.ds.informatik.uni-kiel.de:/home/ban/newjob.nrf52.hex
-	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex"
+	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex --hosts /home/ban/all-hosts"
+
+testbedschedulehomeext: 
+	scp -P21382 $(FNAME).hex boo@beshr.hopto.org:/home/boo/newjob.nrf52.hex
+	ssh -p21382 boo@beshr.hopto.org "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/boo/newjob.nrf52.hex --hosts /home/boo/all-hosts"
+
+testbedschedulehome: 
+	scp -P9999 $(FNAME).hex boo@boo-p:/home/boo/newjob.nrf52.hex
+	ssh -p9999 boo@boo-p "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/boo/newjob.nrf52.hex --hosts /home/boo/all-hosts"
+
+testbedsynchome:
+	rsync -ravz -e "ssh -p9999" boo@boo-p:/home/boo/jobs/ ./home_testbed/
+
+testbedstarthome:
+	ssh -p9999 boo@boo-p "python /usr/testbed/scripts/testbed.py start"
+
+testbedstarthomeext:
+	ssh -p21382 boo@beshr.hopto.org "python /usr/testbed/scripts/testbed.py start"
+
+testbedsynchomeext:
+	rsync -ravz -e "ssh -p21382" boo@beshr.hopto.org:/home/boo/jobs/ ./home_testbed/
 
 testbedjob: $(CONTIKI_PROJECT)
 	cp $(CONTIKI_PROJECT).hex $(FIRMWARE_NAME).hex
@@ -189,7 +209,7 @@ flashall:
 flashtable:
 	for M in 20 24 21 22 ; do \
 		echo $$M ; \
-		make MOTE=$$M FIRMWARE=$(CONTIKI_PROJECT).hex upload ; \
+		make MOTE=$$M FIRMWARE=$(CONTIKI_PROJECT).hex upload reset; \
 	done
 
 eraseall:

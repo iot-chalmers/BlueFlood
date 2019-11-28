@@ -31,8 +31,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #*******************************************************************************
 #working directory
-WDIR="/Users/beshr/work/chaos/examples/nrf-glossy"
-cd ${WDIR}
+WDIR="/Users/beshr/work/blueflood/examples/nrf-glossy"
+pushd ${WDIR}
 
 echo $0
 #constatnts
@@ -40,9 +40,29 @@ Ble_1Mbit=3 #/*!< 1 Mbit/s Bluetooth Low Energy */
 Ble_2Mbit=4 #/*!< 2 Mbit/s Bluetooth Low Energy */
 Ble_LR125Kbit=5 #/*!< Long range 125 kbit/s (TX Only - RX supports both) */
 Ble_LR500Kbit=6 #/*!< Long range 500 kbit/s (TX Only - RX supports both) */
+IEEE802_15_4=15 #/*!< IEEE 802.15.4 250 kbit/s */
 
 #length of each experiment in minutes
-DURATION=30
+DURATION=5
+initiator=0
+CONTIKI_PROJECT=dirty-channel
+TESTBED_CONF="CAU_TESTBED"
+round_robin_initiator=0
+n_channels=3
+overrive_ch37=0
+packet_size=38
+ntx=4
+
+if [ "$TESTBED_CONF" == "HOME_TESTBED" ]; then 
+  make_target=testbedschedulehome;
+  start_testbed_target=testbedstarthome;
+elif [ "$TESTBED_CONF" == "CAU_TESTBED" ]; then 
+  make_target=testbedschedule;
+  start_testbed_target=testbedstart;
+else
+  echo "Testbed config is missing: $TESTBED_CONF";
+  exit 1;
+fi;
 
 #read parameters to resume execution
 #initialize saved variables
@@ -59,7 +79,7 @@ then
   echo "capture_saved=${capture_saved}; ble_mode_saved=${ble_mode_saved}; tx_offset_saved=${tx_offset_saved}; tx_power_saved=${tx_power_saved};"
 fi 
 
-for capture in 0 1; ##evaluate CT with same (0) and different data (1)
+for capture in 0; ##evaluate CT with same (0) and different data (1)
 do
   ### skip done experiments  ###
   if [ "$capture" -lt "$capture_saved" ]
@@ -72,7 +92,7 @@ do
     tx_power_saved=-100
   fi
 
-  for ble_mode in 3 4 5 6; ##evaluate the different BLE modes
+  for ble_mode in 3 4 5 6 15; ##evaluate the different BLE modes
   do
     ### skip done experiments  ###
     if [ "$ble_mode" -lt "$ble_mode_saved" ]
@@ -94,31 +114,39 @@ do
         tx_power_saved=-100
       fi
       
-      for tx_power in -40 -20 -16 -8 -4 0 4 8  #`seq -40 4 8`;
+      for tx_power in -8 -4 0 #-20 -16 -8 -4 0 4 8 #`seq -40 4 8`;
       do
         ### skip done experiments  ###
         if [ "$tx_power" -le "$tx_power_saved" ]
         then
           continue  ### resumes iteration of an enclosing for loop ###
         fi
-        make TARGET=nrf52840dk ble_mode=${ble_mode} tx_power=${tx_power} tx_offset=${tx_offset} capture=${capture} compile
+        make clean && make TESTBED_CONF=${TESTBED_CONF} initiator=${initiator} round_robin_initiator=${round_robin_initiator} n_channels=${n_channels} overrive_ch37=${overrive_ch37} cpu_busywait=0 ble_mode=${ble_mode} tx_power=${tx_power} tx_offset=${tx_offset} capture=${capture} ntx=${ntx} packet_size=${packet_size} all -j4
         ##save firmware with timestamp and parameters
-        DATE=`date '+%Y_%m_%d_%H_%M_%S'`
-        EXPNAME=${DATE}_'ble_mode'_${ble_mode}_'txpower'_${tx_power}_'txoffset'_${tx_offset}_'capture'_${capture}
-        FIRMWARE_NAME="dirty-channel_${EXPNAME}.nrf52.hex"
+        DATE=$(date +'%Y_%m_%d_%H_%M_%S')
+        EXPERIMENT_PARAM_TMP=ble_mode_${ble_mode}_txpower_${tx_power}_txoffset_${tx_offset}_capture_${capture}_packet_size_${packet_size}_nch_${n_channels}_och_${overrive_ch37}_ntx_${ntx}_i_${initiator}_testbed_${TESTBED_CONF}
+        EXPNAME=${CONTIKI_PROJECT}_${EXPERIMENT_PARAM_TMP}
+        FIRMWARE_NAME="${DATE}_${EXPNAME}"
+        #FIRMWARE_NAME="${EXPNAME}"
         echo ${FIRMWARE_NAME}
-        cp dirty-channel.hex testbedhex/${FIRMWARE_NAME}
+        cp dirty-channel.hex testbedhex/${FIRMWARE_NAME}.hex
+        cp dirty-channel.hex ${FIRMWARE_NAME}.hex
+        #exit
         # FIRMWARE_NAME=$1
         # EXPNAME=${DATE}_$2
-        scp -P9999 testbedhex/${FIRMWARE_NAME} boo@boo-p:/tmp/
-        ssh -p9999 boo@boo-p "python /usr/testbed/scripts/testbed.py create --name '${EXPNAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /tmp/${FIRMWARE_NAME}"
+        # scp -P9999 testbedhex/${FIRMWARE_NAME} boo@boo-p:/tmp/
+        # ssh -p9999 boo@boo-p "python /usr/testbed/scripts/testbed.py create --name '${EXPNAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /tmp/${FIRMWARE_NAME}"
 
-        git add -f testbedhex/${FIRMWARE_NAME}
-	      git commit -m"${EXPNAME} ${FIRMWARE_NAME}"
+        # git add -f testbedhex/${FIRMWARE_NAME}
+	      # git commit -m"${EXPNAME} ${FIRMWARE_NAME}"
         echo "capture_saved=${capture}; ble_mode_saved=${ble_mode}; tx_offset_saved=${tx_offset}; tx_power_saved=${tx_power};" >"$0_resume"
+        make ${make_target} FNAME=dirty-channel DURATION=${DURATION} NAME=${FIRMWARE_NAME}
+
+        #exit
       done
     done
   done
 done
 
-ssh -p9999 boo@boo-p "python /usr/testbed/scripts/testbed.py start"
+make ${start_testbed_target}
+popd
