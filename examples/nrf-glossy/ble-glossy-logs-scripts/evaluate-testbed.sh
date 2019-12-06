@@ -46,12 +46,12 @@ IEEE802_15_4=15 #/*!< IEEE 802.15.4 250 kbit/s */
 DURATION=5
 initiator=0
 CONTIKI_PROJECT=dirty-channel
-TESTBED_CONF="CAU_TESTBED"
+TESTBED_CONF=$1
 round_robin_initiator=0
 n_channels=3
 overrive_ch37=0
 packet_size=38
-ntx=4
+ntx=2
 
 if [ "$TESTBED_CONF" == "HOME_TESTBED" ]; then 
   make_target=testbedschedulehome;

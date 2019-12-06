@@ -1,5 +1,12 @@
 SHELL:=/bin/sh
 
+#### Note: the hex file produced by the makefile is actually an ihex!
+
+GRAZ_APIKEY=$(shell cat graz_apifile.secret)
+GRAZ_TEST_PROTOCOL_DISSEMINATE=6654
+GRAZ_TEST_PROTOCOL_COLLECT=6653
+GRAZ_LAYOUT ?= 0
+
 GCC_INSTALL_ROOT	:= ~/opt/gnu-mcu-eclipse/arm-none-eabi-gcc/7.2.1-1.1-20180401-0515
 GCC_VERSION			:= 7.2.1
 GCC_PREFIX			:= arm-none-eabi
@@ -234,6 +241,22 @@ logtimeoutcommit:
 	gtimeout -s ABRT --kill-after=$$((${DURATION}+2)) --foreground $(DURATION) picocom --noreset -fh -b $(uartbr) --imap lfcrlf /dev/${uart_device} --logfile ./exp-logs/exp$(EXP).log	
 	git add -f exp-logs/exp$(EXP).log
 	git commit -m"exp$(EXP).log"
+
+graztestbedjson_diss:
+	echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_DISSEMINATE), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": true, "jamming": 0, "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
+
+graztestbedjson_collect:
+	echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_COLLECT), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": true, "jamming": 0, "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
+
+graztestbedschedule:
+	curl -H "Content-Type: application/json" -X POST -d @dirty-channel.json "https://iti-testbed.tugraz.at/api/queue/create_job?key=${GRAZ_APIKEY}"
+
+graztestbedtest:
+	echo '{ "protocol": 6653, "layout": 3, "patching": false, "message_length": 8, "periodicity": 0, "name": "hello", "description": "test collect layout3", "duration": 120, "logs": true, "jamming": 0, "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
+	curl -H "Content-Type: application/json" -X POST -d @dirty-channel.json "https://iti-testbed.tugraz.at/api/queue/create_job?key=${GRAZ_APIKEY}"
+
+grazqueue:
+	curl -H "Content-Type: application/json" -X GET "https://iti-testbed.tugraz.at/api/queue?key=${GRAZ_APIKEY}"
 
 include $(CONTIKI)/Makefile.include
 

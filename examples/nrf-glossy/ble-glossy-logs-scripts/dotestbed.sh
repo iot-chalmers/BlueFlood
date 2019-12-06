@@ -3,11 +3,9 @@
 # Initialize all the option variables.
 # This ensures we are not contaminated by variables from the environment.
 
-TESTBED_HOSTNAME=""
-TESTBED_PORT=
-TESTBED_USERNAME=""
+
 #default settings
-DURATION=5
+DURATION=20
 tx_power=-20
 capture=0
 ble_mode=3 #/*!< 1 Mbit/s Bluetooth Low Energy */
@@ -16,9 +14,11 @@ packet_size=38 #default PDU for standard ibeacon
 n_channels=1 #number of RF channels to use
 overrive_ch37=0 #use WiFi and Bluetooth free frequency for ch37
 ntx=4
-initiator=1
-UART_BR_CONF=UART_BAUDRATE_BAUDRATE_Baud230400
-TESTBED_CONF=HOME_TESTBED
+initiator=0
+#UART_BR_CONF=UART_BAUDRATE_BAUDRATE_Baud115200
+TESTBED_CONF=CAU_TESTBED
+CONTIKI_PROJECT=dirty-channel
+round_robin_initiator=0
 
 die() {
     printf '%s\n' "$1" >&2
@@ -29,48 +29,91 @@ show_help () {
   echo "Usage: $0 <sync>: to sync logs, or\n$0 <run>: to compile, schedule and run on the testbed"
 }
 
+#takes $1: logs path, $2: log file name format; e.g., log_%d.txt and $3 $4: the range of the nodes id numbers;
+extract_testbed_ids () {
+    idlist=""; cpuidlist="";
+    # echo $1, $2, $3, $4
+    for i in $(seq $3 $4); do 
+        file=$(printf "$2" $i)
+        if [ -f "$1/$file" ]; then 
+            cpuid=$(head $1/$file | grep -a "ID:" | cut -d':' -f6 |sort -u|cut -d',' -f1); 
+            # printf "0x%x, " $cpuid; 
+            if [ "$idlist" == "" ]; then 
+                idlist="${i}"; cpuidlist="${cpuid}";
+            else
+                idlist="${idlist}, ${i}"; cpuidlist="${cpuidlist}, ${cpuid}";
+            fi; 
+        fi;
+    done; 
+    printf "#define TESTBED_IDS (uint32_t[]){%s}\n\n#define TESTBED_PI_IDS (uint8_t[]){%s}\n" "${cpuidlist}" "${idlist}";
+    # echo ${idlist};
+    # echo ${cpuidlist};
+    # printf "\n";
+    # for i in $(seq $1 $2); do 
+    #     if [ -f  logs_21439/log_$i.txt ]; then printf "%d, " $i; fi; 
+}
+
 checkip () {
-  myip=`dig TXT +short -4 o-o.myaddr.l.google.com @ns1.google.com`
-  home_ip="46.239."
-  chalmers_ip="129.16."
-  if [[ -z "${myip##\"$chalmers_ip*}" ]]; then
-  TESTBED_HOSTNAME="beshr.hopto.org"
-  TESTBED_PORT=21382
-  echo "Chalmers IP: ${myip}"
-  elif [[ -z "${myip##\"$home_ip*}" ]]; then
-  TESTBED_HOSTNAME="boo-p"
-  TESTBED_PORT=9999
-  echo "Home IP: ${myip}"
-  else
-  echo "Foreign IP: ${myip} -- Cannot connect from here."
-  exit 1
-  fi
-  TESTBED_USERNAME="boo"
+    if [ "$TESTBED_CONF" == "CAU_TESTBED" ]; then 
+        TESTBED_HOSTNAME="sunlight.ds.informatik.uni-kiel.de"
+        TESTBED_PORT=17122
+        TESTBED_USERNAME="ban"
+        SYNCPATH="/Users/beshr/work/chaos/examples/nrf-glossy/cau_testbed/"
+        # make_target=testbedschedule;
+        # start_testbed_target=testbedstart;
+        # sync_target=testbedsync;
+
+    elif [ "$TESTBED_CONF" == "HOME_TESTBED" ]; then 
+        # make_target=testbedschedulehome;
+        # start_testbed_target=testbedstarthome;
+        # sync_target=testbedsynchome
+        SYNCPATH="/Users/beshr/work/chaos/examples/nrf-glossy/home_testbed/"
+        TESTBED_USERNAME="boo"
+        myip=`dig TXT +short -4 o-o.myaddr.l.google.com @ns1.google.com`
+        home_ip="46.239."
+        chalmers_ip="129.16."
+        if [[ -z "${myip##\"$chalmers_ip*}" ]]; then
+            TESTBED_HOSTNAME="beshr.hopto.org"
+            TESTBED_PORT=21382
+            echo "Chalmers IP: ${myip}"
+        elif [[ -z "${myip##\"$home_ip*}" ]]; then
+            TESTBED_HOSTNAME="boo-p"
+            TESTBED_PORT=9999
+            echo "Home IP: ${myip}"
+        else
+            echo "Foreign IP: ${myip} -- Cannot connect from here."
+            exit 1
+        fi
+    else
+        echo "Testbed config is missing: $TESTBED_CONF";
+        exit 1;
+    fi
 }
 
 sync () {
-  SYNCPATH="/Users/beshr/work/chaos/examples/nrf-glossy/testbedjobscopy/"
-  rsync --progress -avz --rsh="ssh -p${TESTBED_PORT}" ${TESTBED_USERNAME}@${TESTBED_HOSTNAME}:/home/${TESTBED_USERNAME}/jobs/* ${SYNCPATH};
+  rsync --progress -ravz -e "ssh -p${TESTBED_PORT}" ${TESTBED_USERNAME}@${TESTBED_HOSTNAME}:/home/${TESTBED_USERNAME}/jobs/* ${SYNCPATH};
 }
 
 run () {
-  make TARGET=nrf52840dk TESTBED_CONF=${TESTBED_CONF} initiator=${initiator} UART_BR_CONF=${UART_BR_CONF} ntx=${ntx} overrive_ch37=${overrive_ch37} n_channels=${n_channels} packet_size=${packet_size} ble_mode=${ble_mode} tx_power=${tx_power} tx_offset=${tx_offset} capture=${capture} compile
+    make clean && make TESTBED_CONF=${TESTBED_CONF} initiator=${initiator} round_robin_initiator=${round_robin_initiator} n_channels=${n_channels} overrive_ch37=${overrive_ch37} cpu_busywait=0 ble_mode=${ble_mode} tx_power=${tx_power} tx_offset=${tx_offset} capture=${capture} ntx=${ntx} packet_size=${packet_size} all -j4
+    ##save firmware with timestamp and parameters
+    DATE=$(date +'%Y_%m_%d_%H_%M_%S')
+    EXPERIMENT_PARAM_TMP=ble_mode_${ble_mode}_txpower_${tx_power}_txoffset_${tx_offset}_capture_${capture}_packet_size_${packet_size}_nch_${n_channels}_och_${overrive_ch37}_ntx_${ntx}_i_${initiator}_testbed_${TESTBED_CONF}
+    EXPNAME=${CONTIKI_PROJECT}_${EXPERIMENT_PARAM_TMP}
+    FIRMWARE_NAME="${DATE}_${EXPNAME}"
+    #FIRMWARE_NAME="${EXPNAME}"
+    echo ${FIRMWARE_NAME}
+    if [ ! -f dirty-channel.hex ]; then
+        die "Compile errors"
+    fi
 
-  ##save firmware with timestamp and parameters
-  DATE=`date '+%Y_%m_%d_%H_%M_%S'`
-  EXPNAME=${DATE}_'ble_mode'_${ble_mode}_'txpower'_${tx_power}_'txoffset'_${tx_offset}_'capture'_${capture}_'packet_size'_${packet_size}_'nch'_${n_channels}_'och'_${overrive_ch37}_'ntx'_${ntx}
-  #echo ${EXPNAME}
-  FIRMWARE_NAME="dirty-channel_${EXPNAME}.nrf52.hex"
-  echo ${FIRMWARE_NAME}
-  if [ ! -f dirty-channel.hex ]; then
-    die "Compile errors"
-  fi
-  cp dirty-channel.hex testbedhex/${FIRMWARE_NAME}
-  # FIRMWARE_NAME=$1
-  # EXPNAME=${DATE}_$2
-  scp -P${TESTBED_PORT} testbedhex/${FIRMWARE_NAME} ${TESTBED_USERNAME}@${TESTBED_HOSTNAME}:/tmp/
-  ssh -p${TESTBED_PORT} ${TESTBED_USERNAME}@${TESTBED_HOSTNAME} "python /usr/testbed/scripts/testbed.py create --name '${EXPNAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /tmp/${FIRMWARE_NAME}"
-  ssh -p${TESTBED_PORT} ${TESTBED_USERNAME}@${TESTBED_HOSTNAME} "python /usr/testbed/scripts/testbed.py start"
+    cp dirty-channel.hex testbedhex/${FIRMWARE_NAME}.hex
+    cp dirty-channel.hex ${FIRMWARE_NAME}.hex
+
+    #make ${make_target} FNAME=dirty-channel DURATION=${DURATION} NAME=${FIRMWARE_NAME}
+
+    scp -P${TESTBED_PORT} ${FIRMWARE_NAME}.hex ${TESTBED_USERNAME}@${TESTBED_HOSTNAME}:/home/${TESTBED_USERNAME}/newjob.nrf52.hex
+	ssh -p${TESTBED_PORT} ${TESTBED_USERNAME}@${TESTBED_HOSTNAME} "python /usr/testbed/scripts/testbed.py create --name '${FIRMWARE_NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex --hosts /home/ban/all-hosts"
 }
 
 stop () {
@@ -86,15 +129,15 @@ evaluate() {
     tx_offset=0
     overrive_ch37=0
 
-    for n_channels in 40; #3 8 16 32 40;
+    for n_channels in 3;
     do
-        for ble_mode in 4 5 6; #3 4 5 6; ##evaluate the different BLE modes
+        for ble_mode in 3 4 5 6 15; #3 4 5 6; ##evaluate the different BLE modes
         do
-            for tx_power in `seq -16 4 -12`; #-20 -16 .. 4 
+            for tx_power in -16 -8 -4 0 4 8 #`seq -16 4 8`; #-20 -16 .. 4 
             do
-                for packet_size in 38; #76 152 230;
+                for packet_size in 38 76;
                 do
-                    for ntx in 4 8 12 16; #76 152 230;
+                    for ntx in 2 4 8;
                     do
                         run
                     done
@@ -102,6 +145,7 @@ evaluate() {
             done
         done
     done
+    command start
 }
 
 while :; do
@@ -109,6 +153,10 @@ while :; do
         -h|-\?|--help)
             show_help;    # Display a usage synopsis.
             exit
+            ;;
+        -x|--extract_testbed_ids)
+            #takes $2: logs path, $3: log file name format; e.g., log_%d.txt and $4 $5: the range of the nodes id numbers;
+            extract_testbed_ids $2 $3 $4 $5;
             ;;
         -c|--checkip)
             checkip;
@@ -205,6 +253,30 @@ while :; do
                 die 'ERROR: "--ntx" requires a non-empty option argument.'
             fi
             ;;
+        --testbed)       # Takes an option argument; ensure it has been specified.
+            if [ "$2" ]; then
+                TESTBED_CONF=$2
+                shift
+            else
+                die 'ERROR: "--testbed" shall be either CAU_TESTBED or HOME_TESTBED'
+            fi
+            ;;
+            --initiator)       # Takes an option argument; ensure it has been specified.
+            if [ "$2" ]; then
+                initiator=$2
+                shift
+            else
+                die 'ERROR: "--initiator" shall have a value'
+            fi
+            ;;      
+            --roundrobin)       # Takes an option argument; ensure it has been specified.
+            if [ "$2" ]; then
+                round_robin_initiator=$2
+                shift
+            else
+                die 'ERROR: "--roundrobin" shall be 0 or 1'
+            fi
+            ;;                 
         --)              # End of all options.
             shift
             break
