@@ -17,14 +17,18 @@
 #include "nrf-gpio.h"
 /*---------------------------------------------------------------------------*/
 #ifndef NTX
-#define ROUND_LEN (5U)
+#define ROUND_LEN (4U)
+#define ROUND_RX_LEN (2*TESTBED_DIAMETER+ROUND_LEN)
 #else
-#define ROUND_LEN ((NTX)+1)
+#define ROUND_LEN ((NTX))
+#define ROUND_RX_LEN (2*TESTBED_DIAMETER+NTX)
 #endif /* NTX */
 #ifndef ROUND_PERIOD_CONF_US
 #error "Define round period!"
 #endif
-#define ROUND_PERIOD (ROUND_PERIOD_CONF_US - ROUND_LEN * SLOT_LEN)
+#define ROUND_LEN_MAX (ROUND_RX_LEN+ROUND_LEN)
+
+#define ROUND_PERIOD (ROUND_PERIOD_CONF_US - ROUND_LEN_MAX * SLOT_LEN)
 /*---------------------------------------------------------------------------*/
 #define IBEACON_SIZE  (sizeof(ble_beacon_t))
 #define BLUETOOTH_BEACON_PDU(S) (8+(S))
@@ -262,7 +266,7 @@ PROCESS_THREAD(tx_process, ev, data)
     #if (TESTBED==WIRED_TESTBED)
     #define ROUND_LEN_RULE (((!IS_INITIATOR()) && synced && (slot < ROUND_LEN)) || ((IS_INITIATOR() || !synced) && (slot < ROUND_LEN)) )
     #else
-    #define ROUND_LEN_RULE (((!IS_INITIATOR()) && synced && (slot < sync_slot + ROUND_LEN)) || ((IS_INITIATOR() || !synced) && (slot < 2*ROUND_LEN)) )
+    #define ROUND_LEN_RULE (((!IS_INITIATOR()) && synced && (slot < sync_slot + ROUND_LEN)) || ((IS_INITIATOR() || !synced) && (slot < ROUND_RX_LEN)) )
     #endif /* TESTBED==WIRED_TESTBED */
 
     #if ROUND_ROBIN_INITIATOR
