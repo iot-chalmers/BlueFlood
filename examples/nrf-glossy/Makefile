@@ -32,6 +32,7 @@ Ble_LR125Kbit=5 #/*!< Long range 125 kbit/s (TX Only - RX supports both) */
 Ble_LR500Kbit=6 #/*!< Long range 500 kbit/s (TX Only - RX supports both) */
 Ieee802154_250Kbit=15 #/*!< IEEE 802.15.4-2006 250 kbit/s */
 
+period ?= 100 #in ms
 tx_power ?= 0 #in dB
 capture ?= 0 #evaluate capture mode
 ble_mode ?= $(Ble_1Mbit) #Bluetooth mode
@@ -64,7 +65,7 @@ CONTIKI_WITH_CHAOS = 0
 CONTIKI_WITH_IPV4 = 0
 CONTIKI_WITH_IPV6 = 0
 CONTIKI_WITH_RIME = 1
-CFLAGS += -DTEST_SLEEP_NODE_FOREVER=$(sleep_node_forever) -DBLUEFLOOD_BUSYWAIT=$(cpu_busywait) -DROUND_ROBIN_INITIATOR=$(round_robin_initiator) -DRADIO_TEST_TX_CARRIER=$(test_mode_tx_carrier) -DINITATOR_NODE_INDEX=$(initiator) -DUART_BAUDRATE=$(UART_BR_CONF) -DOVERRIDE_BLE_CHANNEL_37$(overrive_ch37) -DNTX=$(ntx) -DNUMBER_OF_CHANNELS=$(n_channels) -DPACKET_TEST_SIZE_CONF=$(packet_size) -DBLE_DEFAULT_RF_POWER=$(tx_power) -DTEST_CE=$(capture) -DRADIO_MODE_CONF=$(ble_mode) -DARTIFICIAL_TX_OFFSET=$(tx_offset)
+CFLAGS += -DROUND_PERIOD_MS_PARAM=$(period) -DTEST_SLEEP_NODE_FOREVER=$(sleep_node_forever) -DBLUEFLOOD_BUSYWAIT=$(cpu_busywait) -DROUND_ROBIN_INITIATOR=$(round_robin_initiator) -DRADIO_TEST_TX_CARRIER=$(test_mode_tx_carrier) -DINITATOR_NODE_INDEX=$(initiator) -DUART_BAUDRATE=$(UART_BR_CONF) -DOVERRIDE_BLE_CHANNEL_37$(overrive_ch37) -DNTX=$(ntx) -DNUMBER_OF_CHANNELS=$(n_channels) -DPACKET_TEST_SIZE_CONF=$(packet_size) -DBLE_DEFAULT_RF_POWER=$(tx_power) -DTEST_CE=$(capture) -DRADIO_MODE_CONF=$(ble_mode) -DARTIFICIAL_TX_OFFSET=$(tx_offset)
 ifdef TESTBED_CONF
 CFLAGS += -DTESTBED=$(TESTBED_CONF)
 endif
