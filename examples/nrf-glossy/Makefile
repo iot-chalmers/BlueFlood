@@ -5,7 +5,9 @@ SHELL:=/bin/sh
 GRAZ_APIKEY=$(shell cat graz_apifile.secret)
 GRAZ_TEST_PROTOCOL_DISSEMINATE=6654
 GRAZ_TEST_PROTOCOL_COLLECT=6653
-GRAZ_LAYOUT ?= 0
+GRAZ_LAYOUT ?= 1
+LOG ?= true
+JAMMING ?= 0
 
 GCC_INSTALL_ROOT	:= ~/opt/gnu-mcu-eclipse/arm-none-eabi-gcc/7.2.1-1.1-20180401-0515
 GCC_VERSION			:= 7.2.1
@@ -243,10 +245,10 @@ logtimeoutcommit:
 	git commit -m"exp$(EXP).log"
 
 graztestbedjson_diss:
-	echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_DISSEMINATE), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": true, "jamming": 0, "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
+	echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_DISSEMINATE), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": $(LOG), "jamming": $(JAMMING), "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
 
 graztestbedjson_collect:
-	echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_COLLECT), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": true, "jamming": 0, "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
+	echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_COLLECT), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": $(LOG), "jamming": $(JAMMING), "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
 
 graztestbedschedule:
 	curl -H "Content-Type: application/json" -X POST -d @dirty-channel.json "https://iti-testbed.tugraz.at/api/queue/create_job?key=${GRAZ_APIKEY}"
