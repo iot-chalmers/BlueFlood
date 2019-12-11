@@ -1,13 +1,16 @@
 SHELL:=/bin/sh
 
 #### Note: the hex file produced by the makefile is actually an ihex!
-
+GRAZ_LOGIN_URL="https://iti-testbed.tugraz.at/auth/login"
+GRAZ_LOG_URL=https://iti-testbed.tugraz.at/nordic/queue/download_logs/
 GRAZ_APIKEY=$(shell cat graz_apifile.secret)
+GRAZ_USERNAME=$(shell cat graz_username.secret)
+GRAZ_PASSWORD=$(shell cat graz_password.secret)
 GRAZ_TEST_PROTOCOL_DISSEMINATE=6654
 GRAZ_TEST_PROTOCOL_COLLECT=6653
 GRAZ_LAYOUT ?= 1
-LOG ?= true
-JAMMING ?= 0
+log ?= true
+jamming ?= 0
 
 GCC_INSTALL_ROOT	:= ~/opt/gnu-mcu-eclipse/arm-none-eabi-gcc/7.2.1-1.1-20180401-0515
 GCC_VERSION			:= 7.2.1
@@ -48,7 +51,7 @@ test_mode_tx_carrier?=0 #do not tx/rx data, but transmit a constant unmodulated 
 DURATION ?= 120 #duration of the experiment
 TESTBED_CONF?=WIRED_TESTBED #Default testbed 
 round_robin_initiator ?= 0 #switch initiator every round
-cpu_busywait ?= 1
+cpu_busywait ?= 0
 
 sleep_node_forever?=0
 
@@ -59,13 +62,13 @@ TARGET=nrf52840dk
 endif
 
 CONTIKI_PROJECT = dirty-channel
-PROJECT_SOURCEFILES += nrf-radio-driver.c hamming-encoder-decoder.c crc24.c
+PROJECT_SOURCEFILES += crc24.c hamming-encoder-decoder.c nrf-radio-driver.c
 
 CONTIKI_WITH_CHAOS = 0
 CONTIKI_WITH_IPV4 = 0
 CONTIKI_WITH_IPV6 = 0
 CONTIKI_WITH_RIME = 1
-CFLAGS += -DROUND_PERIOD_MS_PARAM=$(period) -DTEST_SLEEP_NODE_FOREVER=$(sleep_node_forever) -DBLUEFLOOD_BUSYWAIT=$(cpu_busywait) -DROUND_ROBIN_INITIATOR=$(round_robin_initiator) -DRADIO_TEST_TX_CARRIER=$(test_mode_tx_carrier) -DINITATOR_NODE_INDEX=$(initiator) -DUART_BAUDRATE=$(UART_BR_CONF) -DOVERRIDE_BLE_CHANNEL_37$(overrive_ch37) -DNTX=$(ntx) -DNUMBER_OF_CHANNELS=$(n_channels) -DPACKET_TEST_SIZE_CONF=$(packet_size) -DBLE_DEFAULT_RF_POWER=$(tx_power) -DTEST_CE=$(capture) -DRADIO_MODE_CONF=$(ble_mode) -DARTIFICIAL_TX_OFFSET=$(tx_offset)
+CFLAGS += -DENABLE_BLUEFLOOD_LOGS=$(log) -DROUND_PERIOD_MS_PARAM=$(period) -DTEST_SLEEP_NODE_FOREVER=$(sleep_node_forever) -DBLUEFLOOD_BUSYWAIT=$(cpu_busywait) -DROUND_ROBIN_INITIATOR=$(round_robin_initiator) -DRADIO_TEST_TX_CARRIER=$(test_mode_tx_carrier) -DINITATOR_NODE_INDEX=$(initiator) -DUART_BAUDRATE=$(UART_BR_CONF) -DOVERRIDE_BLE_CHANNEL_37$(overrive_ch37) -DNTX=$(ntx) -DNUMBER_OF_CHANNELS=$(n_channels) -DPACKET_TEST_SIZE_CONF=$(packet_size) -DBLE_DEFAULT_RF_POWER=$(tx_power) -DTEST_CE=$(capture) -DRADIO_MODE_CONF=$(ble_mode) -DARTIFICIAL_TX_OFFSET=$(tx_offset)
 ifdef TESTBED_CONF
 CFLAGS += -DTESTBED=$(TESTBED_CONF)
 endif
@@ -230,8 +233,6 @@ eraseall:
 
 doall: clean all flashall resetall
 
-compile: clean all
-
 resetall: 
 	for M in 10 11 12 13 ; do \
 		echo $$M ; \
@@ -245,21 +246,34 @@ logtimeoutcommit:
 	git add -f exp-logs/exp$(EXP).log
 	git commit -m"exp$(EXP).log"
 
-graztestbedjson_diss:
-	echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_DISSEMINATE), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": $(LOG), "jamming": $(JAMMING), "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
+graztestbedjson_diss: all
+	@echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_DISSEMINATE), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": $(log), "jamming": $(jamming), "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
 
-graztestbedjson_collect:
-	echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_COLLECT), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": $(LOG), "jamming": $(JAMMING), "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
+graztestbedjson_collect: all
+	@echo '{ "protocol": $(GRAZ_TEST_PROTOCOL_COLLECT), "layout": $(GRAZ_LAYOUT), "patching": false, "message_length": 8, "periodicity": 0, "name": "$(FIRMWARE_NAME)", "description": "$(FIRMWARE_NAME)", "duration": $(shell echo "60*(${DURATION})"|bc -l), "logs": $(log), "jamming": $(jamming), "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
 
-graztestbedschedule:
-	curl -H "Content-Type: application/json" -X POST -d @dirty-channel.json "https://iti-testbed.tugraz.at/api/queue/create_job?key=${GRAZ_APIKEY}"
+graztestbedschedule: graztestbedjson_diss
+	@curl -H "Content-Type: application/json" -X POST -d @dirty-channel.json "https://iti-testbed.tugraz.at/api/queue/create_job?key=${GRAZ_APIKEY}"
 
-graztestbedtest:
-	echo '{ "protocol": 6653, "layout": 3, "patching": false, "message_length": 8, "periodicity": 0, "name": "hello", "description": "test collect layout3", "duration": 120, "logs": true, "jamming": 0, "file": "'$(shell cat dirty-channel.hex|base64)'" }' >dirty-channel.json;
-	curl -H "Content-Type: application/json" -X POST -d @dirty-channel.json "https://iti-testbed.tugraz.at/api/queue/create_job?key=${GRAZ_APIKEY}"
-
+graztestbedschedulecollect: graztestbedjson_collect
+	@curl -H "Content-Type: application/json" -X POST -d @dirty-channel.json "https://iti-testbed.tugraz.at/api/queue/create_job?key=${GRAZ_APIKEY}"
+	
 grazqueue:
-	curl -H "Content-Type: application/json" -X GET "https://iti-testbed.tugraz.at/api/queue?key=${GRAZ_APIKEY}"
+	@curl -H "Content-Type: application/json" -X GET "https://iti-testbed.tugraz.at/api/queue?key=${GRAZ_APIKEY}"
+
+grazdownload:
+	#extract the cookie token, login using username and password, then download using the login cookie. Finally, show the downloaded file size. Repeat until successful. Then, extract the logs and delete the zip file.
+	
+	@fsize=0; MIN_LOG_SIZE=50; \
+	while [ "$${fsize}" -lt "$${MIN_LOG_SIZE}" ]; do \
+	curl --silent -S -X GET -k --cookie /tmp/grazcookies.txt --cookie-jar /tmp/grazcookies.txt -H "cache-control: max-age=0" -H "dnt: 1" -H "sec-fetch-mode: navigate" -H "sec-fetch-site: same-origin" -H "upgrade-insecure-requests: 1" -H "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36" -w "\nhttp: %{http_code} %{content_type}\n" --output /tmp/grazlogin1.htm ${GRAZ_LOGIN_URL} ; \
+	CSRF=$$(cat /tmp/grazlogin1.htm | grep -a "csrf" | cut -d'=' -f5 | cut -d'"' -f2); \
+	curl --silent -S -X POST -k --cookie /tmp/grazcookies.txt --cookie-jar /tmp/grazcookies.txt -F "next=/queue/download_logs/${JOB_ID}" -F "email=${GRAZ_USERNAME}" -F "password=${GRAZ_PASSWORD}" -F "submit=Login" -F "csrf_token=$${CSRF}" -H "X-CSRFToken: $${CSRF}" -H "referer: ${GRAZ_LOGIN_URL}" -H "dnt: 1" -H "sec-fetch-mode: navigate" -H "sec-fetch-site: same-origin" -H "sec-fetch-user: ?1" -H "upgrade-insecure-requests: 1" -H "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36" -w "\nhttp: %{http_code} %{content_type}\n" --output /tmp/grazlogin2.htm ${GRAZ_LOGIN_URL} ; \
+	curl -o graz_testbed/logs_${JOB_ID}.zip --silent -S -X GET -k --cookie /tmp/grazcookies.txt --cookie-jar /tmp/grazcookies.txt "${GRAZ_LOG_URL}/${JOB_ID}" -H "X-CSRFToken: $${CSRF}" -H "cache-control: max-age=0" -H "dnt: 1" -H "sec-fetch-mode: navigate" -H "sec-fetch-site: same-origin" -H "sec-fetch-user: ?1" -H "upgrade-insecure-requests: 1" -H "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36" -w "\nhttp: %{http_code} %{content_type} %{size_download}\n"; \
+	fsize=$$(du -k 'graz_testbed/logs_${JOB_ID}.zip' | cut -f1); echo $${fsize}; \
+	if [ "$${fsize}" -gt "$${MIN_LOG_SIZE}" ]; then mkdir -p graz_testbed/logs_${JOB_ID}; tar xvf graz_testbed/logs_${JOB_ID}.zip -C graz_testbed/logs_${JOB_ID}; fi; \
+	done; \
+	rm -rf graz_testbed/logs_${JOB_ID}.zip;
 
 include $(CONTIKI)/Makefile.include
 
@@ -289,5 +303,5 @@ include $(CONTIKI)/Makefile.include
 # 	make TARGET=wsn430 iotlab 
 
 # iotlab: CFLAGS+= -DTESTBED=IOTLAB_SACLAY -DCOOJA=0
-# iotlab: compile
+# iotlab: all
 # 	cp $(CONTIKI_PROJECT).elf $(FIRMWARE_FULL_PATH)
