@@ -152,7 +152,7 @@ uint8_t DL_HammingCorrect2416(uint8_t* first, uint8_t* second, uint8_t parity)
 
 static uint8_t encode_packet(uint8_t* msgin, uint8_t len, uint8_t* msgout){
   if(len % 2){
-    printf("Cannot encode due to odd packet length! %d\n", len);
+    PRINTF("Cannot encode due to odd packet length! %d\n", len);
     return 1; //works with even sizes only
   }
   uint32_t crc = crc24_calc(msgin, len);
@@ -195,7 +195,7 @@ static uint8_t decode_packet(uint8_t* msgin, uint8_t *olen, uint8_t* msgout){
   int len = b2;
   
   /*if(len % 3){
-    printf("Cannot decode due to wrong packet length!\n");
+    PRINTF("Cannot decode due to wrong packet length!\n");
     return 1; //works with even sizes only
   }*/
 
