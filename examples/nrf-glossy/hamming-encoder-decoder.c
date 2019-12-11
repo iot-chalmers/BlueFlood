@@ -1,13 +1,13 @@
 /* Based on code from:
-/* David Cook
+David Cook
 // RobotRoom.com
 // June 20, 2014
 // LoFi project for TheHackADayPrize
 // http://hackaday.io/project/1552-LoFi
 */
-#include <stdio.h> /* For printf() */
 #include <inttypes.h>
 #include "contiki.h"
+#include "nrf-radio-driver.h" /* For logs config and PRINTF() */
 #include "ble-beacon-header.h"
 #include "encode-decode-hamming-crc24.h"
 

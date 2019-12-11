@@ -1,6 +1,51 @@
 #ifndef _NRF_RADIO_DRIVER_H_
 #define _NRF_RADIO_DRIVER_H_
 
+/*---------------------------------------------------------------------------*/
+/* Log config */
+
+#ifndef ENABLE_BLUEFLOOD_LOGS
+#define ENABLE_BLUEFLOOD_LOGS 1
+#endif
+
+#define PRINT_TX_STATUS_CONF true
+#define PRINT_TS_DELTA_CONF true
+#define PRINT_RSSI_CONF true
+#define PRINT_LAST_RX_CONF false
+#define PRINT_RX_STATS_CONF false
+#define PRINT_NODE_CONFIG_CONF true
+#define PRINT_CUSTOM_DEBUG_MSG_CONF false
+#define PRINT_NODE_REJOIN_WARNING_CONF false
+#define PRINT_GO_LATE_WARNING_CONF true
+/*---------------------------------------------------------------------------*/
+/* Log defines */
+#if ENABLE_BLUEFLOOD_LOGS
+  #include <stdio.h> /* For printf() */
+  #define SPRINTF(...) sprintf(__VA_ARGS__)
+  #define PRINTF(...) printf(__VA_ARGS__)
+#else
+  #define SPRINTF(...)
+  #define PRINTF(...)
+#endif /* ENABLE_BLUEFLOOD_LOGS */
+
+#define TESTBED_LOG_STYLE (TESTBED!=WIRED_TESTBED)
+
+#ifndef FIRMWARE_TIMESTAMP_STR
+#define FIRMWARE_TIMESTAMP_STR (__DATE__ " " __TIME__)
+#endif
+
+#define PRINT_TX_STATUS ((ENABLE_BLUEFLOOD_LOGS) && (PRINT_TX_STATUS_CONF))
+#define PRINT_TS_DELTA ((ENABLE_BLUEFLOOD_LOGS) && (PRINT_TS_DELTA_CONF))
+#define PRINT_RSSI ((ENABLE_BLUEFLOOD_LOGS) && (PRINT_RSSI_CONF))
+#define PRINT_LAST_RX ((ENABLE_BLUEFLOOD_LOGS) && (PRINT_LAST_RX_CONF))
+#define PRINT_RX_STATS ((ENABLE_BLUEFLOOD_LOGS) && (PRINT_RX_STATS_CONF))
+#define PRINT_NODE_CONFIG ((ENABLE_BLUEFLOOD_LOGS) && (PRINT_NODE_CONFIG_CONF))
+#define PRINT_CUSTOM_DEBUG_MSG ((ENABLE_BLUEFLOOD_LOGS) && (PRINT_CUSTOM_DEBUG_MSG_CONF))
+#define PRINT_NODE_REJOIN_WARNING ((ENABLE_BLUEFLOOD_LOGS) && (PRINT_NODE_REJOIN_WARNING_CONF))
+#define PRINT_GO_LATE_WARNING ((ENABLE_BLUEFLOOD_LOGS) && (PRINT_GO_LATE_WARNING_CONF))
+
+/*---------------------------------------------------------------------------*/
+
 #include "testbed.h"
 #define ROUND_PERIOD_CONF_US (((ROUND_PERIOD_MS_PARAM)*RTIMER_SECOND)/1000)
 

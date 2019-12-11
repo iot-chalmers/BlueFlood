@@ -1,4 +1,3 @@
-#include <stdio.h> /* For printf() */
 #include <inttypes.h>
 #include "contiki.h"
 //#include "dev/radio.h"
@@ -416,7 +415,7 @@ void my_radio_send(uint8_t* buf, int channel)
   #if TRIGGER_RADIO_START_WITH_TIMER && !RADIO_TEST_TX_CARRIER
     NRF_TIMER1->TASKS_START = 1;
   #endif
-  //printf("DIRTY CHANNEL --- %u ---\n", channel);
+  //PRINTF("DIRTY CHANNEL --- %u ---\n", channel);
   //while(NRF_RADIO->EVENTS_END == 0U);
 
 }
@@ -451,7 +450,7 @@ uint8_t my_radio_rx(uint8_t* buf, int channel)
   #if TRIGGER_RADIO_START_WITH_TIMER && !RADIO_TEST_TX_CARRIER
     NRF_TIMER1->TASKS_START = 1;
   #endif
-  //printf("Listen --- %u ---\n", channel);
+  //PRINTF("Listen --- %u ---\n", channel);
   /*BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0U, SLOT_LEN - RX_SLOT_LEN - 10);
   if(NRF_RADIO->EVENTS_ADDRESS){
     BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_END != 0U, RX_SLOT_LEN);

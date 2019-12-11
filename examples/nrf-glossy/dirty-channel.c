@@ -1,5 +1,3 @@
-
-#include <stdio.h> /* For printf() */
 #include <inttypes.h>
 #include <string.h>
 #include <random.h>
@@ -30,6 +28,12 @@
 
 #define ROUND_PERIOD (ROUND_PERIOD_CONF_US - ROUND_LEN_MAX * SLOT_LEN)
 /*---------------------------------------------------------------------------*/
+#if TESTBED!=WIRED_TESTBED
+  #define LOG_STATE_SIZE (ROUND_LEN_MAX)
+#else
+  #define LOG_STATE_SIZE (ROUND_LEN_MAX)
+#endif /* TESTBED!=WIRED_TESTBED */
+/*---------------------------------------------------------------------------*/
 #define IBEACON_SIZE  (sizeof(ble_beacon_t))
 #define BLUETOOTH_BEACON_PDU(S) (8+(S))
 #define PACKET_AIR_TIME_MIN (PACKET_AIR_TIME(BLUETOOTH_BEACON_PDU(IBEACON_SIZE),RADIO_MODE_CONF))
@@ -38,19 +42,6 @@
 #define SLOT_LEN (RX_SLOT_LEN+2*GUARD_TIME_SHORT)
 #define SLOT_LEN_NOTSYNCED (RX_SLOT_LEN+GUARD_TIME)
 #define FIRST_SLOT_OFFSET (SLOT_PROCESSING_TIME + GUARD_TIME + ADDRESS_EVENT_T_TX_OFFSET)
-/*---------------------------------------------------------------------------*/
-/* Log config */
-#define TESTBED_LOG_STYLE (TESTBED!=WIRED_TESTBED)
-#define PRINT_TS_DELTA true
-#define PRINT_RSSI true
-#define PRINT_LAST_RX false
-#define PRINT_RX_STATS false
-#define PRINT_NODE_CONFIG true
-#define PRINT_CUSTOM_DEBUG_MSG false
-#define PRINT_NODE_REJOIN_WARNING false
-#ifndef FIRMWARE_TIMESTAMP_STR
-#define FIRMWARE_TIMESTAMP_STR (__DATE__ " " __TIME__)
-#endif
 /*---------------------------------------------------------------------------*/
 const uint8_t uuids_array[UUID_LIST_LENGTH][16] = UUID_ARRAY;
 const uint32_t testbed_ids[] = TESTBED_IDS;
@@ -158,7 +149,7 @@ void rtc_schedule(uint32_t ticks);
 //     }
 //   } /* else it is overflow */
 //   // else
-//   //   printf("OVERFLOW\n\r");
+//   //   PRINTF("OVERFLOW\n\r");
 // }
 #endif
 /*---------------------------------------------------------------------------*/
@@ -172,17 +163,20 @@ PROCESS_THREAD(tx_process, ev, data)
   berr = 0 /* bit errors per round */, 
   berr_per_pkt_max = 0, berr_per_byte_max = 0;
   static uint32_t rx_ok_total = 0, rx_failed_total = 0, berr_total = 0;
-  #if TESTBED!=WIRED_TESTBED
-  static int8_t rx_rssi[3*ROUND_LEN]={0};
-  static uint8_t berr_pkts[3*ROUND_LEN]={0};
-  static int32_t rx_ts_delta[3*ROUND_LEN]={0UL};
-  static char tx_status[3*ROUND_LEN+1]={0};
-  #else
-  static int8_t rx_rssi[ROUND_LEN]={0};
-  static uint8_t berr_pkts[ROUND_LEN]={0};
-  static int32_t rx_ts_delta[ROUND_LEN]={0UL};
-  static char tx_status[ROUND_LEN+1]={0};
+
+  #if PRINT_RSSI
+  static int8_t rx_rssi[LOG_STATE_SIZE]={0};
   #endif
+  #if PRINT_LAST_RX
+  // static uint8_t berr_pkts[LOG_STATE_SIZE]={0};
+  #endif 
+  #if PRINT_TS_DELTA
+  static int32_t rx_ts_delta[LOG_STATE_SIZE]={0UL};
+  #endif //PRINT_TS_DELTA
+  #if PRINT_TX_STATUS
+  static char tx_status[LOG_STATE_SIZE+1]={0};
+  #endif /* PRINT_TX_STATUS */
+
   volatile static rtimer_clock_t tt =0, t_start_round = 0;
   static bool do_tx = 0, do_rx = 0, synced = 0, joined = 0;
   static volatile bool  last_crc_is_ok = 0;
@@ -200,13 +194,13 @@ PROCESS_THREAD(tx_process, ev, data)
     my_radio_send(my_tx_buffer, BLE_DEFAULT_CHANNEL);
     #endif
     while(1){
-      printf("#@ %s, ID: 0x%lx, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s), idx %d\n", 
+      PRINTF("#@ %s, ID: 0x%lx, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s), idx %d\n", 
       FIRMWARE_TIMESTAMP_STR, my_id, tx_node_id, (int8_t)BLE_DEFAULT_RF_POWER, BLE_DEFAULT_CHANNEL, 2400u+ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL], OVERRIDE_BLE_CHANNEL_37 ? "not std" : "std", my_index);
       watchdog_periodic();
     }
   #elif TEST_SLEEP_NODE_FOREVER
     while(1){
-      printf("#@ %s, ID: 0x%lx, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s)\n", 
+      PRINTF("#@ %s, ID: 0x%lx, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s)\n", 
       FIRMWARE_TIMESTAMP_STR, my_id, tx_node_id, (int8_t)BLE_DEFAULT_RF_POWER, BLE_DEFAULT_CHANNEL, 2400u+ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL], OVERRIDE_BLE_CHANNEL_37 ? "not std" : "std");
       watchdog_periodic();
       __disable_irq(); // __enable_irq()
@@ -257,7 +251,9 @@ PROCESS_THREAD(tx_process, ev, data)
   while(1)
   {
     rx_ok = 0, rx_crc_failed = 0, rx_none = 0; tx_done=0; berr = 0; berr_per_pkt_max = 0, berr_per_byte_max = 0; corrupt_msg_index = 0;
+    #if PRINT_TX_STATUS
     tx_status[0] = ':';
+    #endif /* PRINT_TX_STATUS */
     guard_time = GUARD_TIME;
     synced = 0;
     sync_slot = UINT16_MAX;
@@ -346,7 +342,9 @@ PROCESS_THREAD(tx_process, ev, data)
         // while(!NRF_TIMER0->EVENTS_COMPARE[0]){watchdog_periodic();};
         BUSYWAIT_UNTIL_ABS(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, tt - ADDRESS_EVENT_T_TX_OFFSET + ARTIFICIAL_TX_OFFSET);
         if(!NRF_TIMER0->EVENTS_COMPARE[0]){
+          #if PRINT_TX_STATUS
           tx_status[logslot] = 'T';
+          #endif /* PRINT_TX_STATUS */
         } else {
           if(slot == 0){
             nrf_gpio_pin_toggle(SLOT1_INDICATOR_PIN);
@@ -354,15 +352,23 @@ PROCESS_THREAD(tx_process, ev, data)
           }
           BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_END != 0U, tt + ARTIFICIAL_TX_OFFSET + PACKET_AIR_TIME_MIN);
           if(!NRF_RADIO->EVENTS_END){
+          #if PRINT_TX_STATUS
             tx_status[logslot] = 'R';
+          #endif /* PRINT_TX_STATUS */
           } else {
             tx_done++;
+            #if PRINT_TX_STATUS
             //tx_status[logslot] = 'X';
             tx_status[logslot] =  ( msg.turn == MSG_TURN_NONE ) ? 'X' : ( ( msg.turn == MSG_TURN_BROADCAST ) ? 'B' : ( ( msg.turn <= TESTBED_SIZE ) ? HEXC(msg.turn) : 'U' ) );
+            #endif /* PRINT_TX_STATUS */
           }
         }
+        #if PRINT_TS_DELTA
         rx_ts_delta[logslot] = get_rx_ts() - tt;
+        #endif //PRINT_TS_DELTA
+        #if PRINT_RSSI
         rx_rssi[logslot] = get_radio_rssi();
+        #endif
       } else if(do_rx){
         static int join_trial = 0;
         uint8_t got_payload_event, got_address_event, got_end_event, slot_started;
@@ -425,7 +431,7 @@ PROCESS_THREAD(tx_process, ev, data)
             }  
             if(rx_missed_slot || !slot_started) {
               #if PRINT_CUSTOM_DEBUG_MSG
-              sprintf(dbgmsg, "t %" PRIu32 " %" PRIu32 " n %" PRIu32 " p %" PRIu32 " m %d %d", (t_start_round), rx_target_time, rx_tn, t_proc, rx_missed_slot, slot_started );
+              SPRINTF(dbgmsg, "t %" PRIu32 " %" PRIu32 " n %" PRIu32 " p %" PRIu32 " m %d %d", (t_start_round), rx_target_time, rx_tn, t_proc, rx_missed_slot, slot_started );
               #endif
             }
           }
@@ -476,11 +482,11 @@ PROCESS_THREAD(tx_process, ev, data)
                   t_start_round = get_rx_ts() - TX_CHAIN_DELAY - slot * SLOT_LEN;
                   my_turn = (rx_pkt->turn == my_index) || (rx_pkt->turn == MSG_TURN_BROADCAST);
                   #if 0
-                  printf("pkt: ");
+                  PRINTF("pkt: ");
                   for(i=0; i<sizeof(my_rx_buffer); i++){
-                    printf("%d, ", my_rx_buffer[i]);
+                    PRINTF("%d, ", my_rx_buffer[i]);
                   }
-                  printf("\n");
+                  PRINTF("\n");
                   #endif
                 }
               }
@@ -498,6 +504,7 @@ PROCESS_THREAD(tx_process, ev, data)
           }
         } while(!joined);
 
+        #if PRINT_TX_STATUS
         if(last_rx_ok && last_crc_is_ok) {
           tx_status[logslot] = '-';
         } else if(!slot_started) {
@@ -515,6 +522,7 @@ PROCESS_THREAD(tx_process, ev, data)
         } else {
           tx_status[logslot] = '?';
         }
+        #endif /* PRINT_TX_STATUS */
 
         rx_ok += last_rx_ok && last_crc_is_ok;
         if(CRC_LEN > 0 || USE_HAMMING_CODE){
@@ -523,9 +531,12 @@ PROCESS_THREAD(tx_process, ev, data)
           rx_crc_failed += memcmp(&my_rx_buffer, &msg, msg.radio_len - 5) != 0;
         }
         rx_none += (!got_address_event || !got_end_event) && !last_rx_ok;
+        #if PRINT_TS_DELTA
         rx_ts_delta[logslot] = get_rx_ts() - TX_CHAIN_DELAY - tt;
+        #endif //PRINT_TS_DELTA
+        #if PRINT_RSSI
         rx_rssi[logslot] = get_rx_rssi(&my_rx_buffer);
-
+        #endif //PRINT_RSSI
         if(last_rx_ok && !last_crc_is_ok){
           corrupt_msg_index |= (1UL << logslot);
           #if PRINT_LAST_RX
@@ -544,7 +555,7 @@ PROCESS_THREAD(tx_process, ev, data)
               berr_per_byte_max = berr_per_byte_max >= berr_byte ? berr_per_byte_max : berr_byte;
             }
           }
-          berr_pkts[logslot] = berr_per_pkt;
+          // berr_pkts[logslot] = berr_per_pkt;
           berr += berr_per_pkt;
           berr_per_pkt_max = berr_per_pkt_max >= berr_per_pkt ? berr_per_pkt_max : berr_per_pkt;
           #endif /* PRINT_LAST_RX */
@@ -560,107 +571,114 @@ PROCESS_THREAD(tx_process, ev, data)
     rx_failed_total += rx_crc_failed + rx_none;
     uint32_t rx_ok_percent = (rx_ok_total*100) / (MAX(1, rx_ok_total+rx_failed_total));
 
-    /*printf("BERRs: ");
-    for(i=0; i<sizeof(berr_pkts)/sizeof(berr_pkts[0]); i++){
-      printf("%d, ", berr_pkts[i]);
-    }
-    printf("bits per packet\n");*/
-    memset(berr_pkts, 0, sizeof(berr_pkts));
+#if ENABLE_BLUEFLOOD_LOGS
 
+  #if PRINT_LAST_RX
+  /*PRINTF("BERRs: ");
+  for(i=0; i<sizeof(berr_pkts)/sizeof(berr_pkts[0]); i++){
+    PRINTF("%d, ", berr_pkts[i]);
+  }
+  PRINTF("bits per packet\n");*/
+  // memset(berr_pkts, 0, sizeof(berr_pkts));
+  #endif /* PRINT_LAST_RX */
+  
   #if TESTBED_LOG_STYLE
     #if PRINT_RX_STATS
-    printf("{rx-%d} %u, %u, %u, %u, %lu, %lu, %u, %u, %u, %lu, %d\n", round, rx_ok, rx_crc_failed, rx_none, tx_done, rx_ok_total, rx_ok_total+rx_failed_total, berr_per_byte_max, berr_per_pkt_max, berr /* bit errors per round */, berr_total, sync_slot);
+    PRINTF("{rx-%d} %u, %u, %u, %u, %lu, %lu, %u, %u, %u, %lu, %d\n", round, rx_ok, rx_crc_failed, rx_none, tx_done, rx_ok_total, rx_ok_total+rx_failed_total, berr_per_byte_max, berr_per_pkt_max, berr /* bit errors per round */, berr_total, sync_slot);
     #endif
     #if PRINT_RSSI
-    printf("{rssi-%d} ", round);
+    PRINTF("{rssi-%d} ", round);
     for(i=0; i<sizeof(rx_rssi)/sizeof(rx_rssi[0]); i++){
-      printf("%d, ", rx_rssi[i]);
+      PRINTF("%d, ", rx_rssi[i]);
     }
-    printf("\n");
+    PRINTF("\n");
     memset(rx_rssi, 111, sizeof(rx_rssi));
     #endif /* PRINT_RSSI */
 
     #if PRINT_TS_DELTA
-    printf("{td-%d} ", round);
+    PRINTF("{td-%d} ", round);
     for(i=0; i<sizeof(rx_ts_delta)/sizeof(rx_ts_delta[0]); i++){
-      printf("%" PRId32 ", ", rx_ts_delta[i]);
+      PRINTF("%" PRId32 ", ", rx_ts_delta[i]);
     }
-    printf("\n");
+    PRINTF("\n");
     memset(rx_ts_delta, 0, sizeof(rx_ts_delta));
     #endif /* PRINT_TS_DELTA */
 
-    printf("{tx-%d} %s\n", round, tx_status);
+    #if PRINT_TX_STATUS
+    PRINTF("{tx-%d} %s\n", round, tx_status);
+    #endif /* PRINT_TX_STATUS */
     #if PRINT_CUSTOM_DEBUG_MSG
     if(dbgmsg[0]!=0){
-      printf("{dg-%d} %s\n", round, dbgmsg);
+      PRINTF("{dg-%d} %s\n", round, dbgmsg);
       dbgmsg[0]=0;
     }
     if(dbgmsg2[0]!=0){
-    printf("{dg2-%d} %s\n", round, dbgmsg2);
+    PRINTF("{dg2-%d} %s\n", round, dbgmsg2);
     dbgmsg2[0]=0;
     }
     #endif /* PRINT_DEBUG_MSG */
 
   #else /* TESTBED_LOG_STYLE */
-    printf("rx_ok %u, crc %u, none %u, tx %u: OK %lu of %lu, berr b%u p%u r%u %lu, sync %d\n", rx_ok, rx_crc_failed, rx_none, tx_done, rx_ok_total, rx_ok_total+rx_failed_total, berr_per_byte_max, berr_per_pkt_max, berr /* bit errors per round */, berr_total, sync_slot);
+    PRINTF("rx_ok %u, crc %u, none %u, tx %u: OK %lu of %lu, berr b%u p%u r%u %lu, sync %d\n", rx_ok, rx_crc_failed, rx_none, tx_done, rx_ok_total, rx_ok_total+rx_failed_total, berr_per_byte_max, berr_per_pkt_max, berr /* bit errors per round */, berr_total, sync_slot);
 
     #if PRINT_RSSI
-    printf("Rssi: ");
+    PRINTF("Rssi: ");
     for(i=0; i<sizeof(rx_rssi)/sizeof(rx_rssi[0]); i++){
-      printf("%d, ", rx_rssi[i]);
+      PRINTF("%d, ", rx_rssi[i]);
     }
-    printf("dB\n");
+    PRINTF("dB\n");
     memset(rx_rssi, 111, sizeof(rx_rssi));
     #endif /* PRINT_RSSI */
 
     #if PRINT_TS_DELTA
-    printf("Ts delta: ");
+    PRINTF("Ts delta: ");
     for(i=0; i<sizeof(rx_ts_delta)/sizeof(rx_ts_delta[0]); i++){
-      printf("%" PRId32 ", ", rx_ts_delta[i]);
+      PRINTF("%" PRId32 ", ", rx_ts_delta[i]);
     }
-    printf("ticks\n");
+    PRINTF("ticks\n");
     memset(rx_ts_delta, 0, sizeof(rx_ts_delta));
     #endif /* PRINT_TS_DELTA */
-    
-    printf("Tx status: %s\n", tx_status);
+    #if PRINT_TX_STATUS
+    PRINTF("Tx status: %s\n", tx_status);
+    #endif /* PRINT_TX_STATUS */
   #endif /* TESTBED_LOG_STYLE */
-
+    #if PRINT_TX_STATUS
     memset(tx_status, '.', sizeof(tx_status));
     tx_status[sizeof(tx_status)-1] = '\0';
+    #endif /* PRINT_TX_STATUS */
     #if PRINT_LAST_RX
-    printf("{err-%d} ", round);
+    PRINTF("{err-%d} ", round);
     uint8_t *pmsg = (uint8_t *)&msg;
     for(i=0; i<=msg.radio_len; i++){
-      printf("%02x ", pmsg[i]);
+      PRINTF("%02x ", pmsg[i]);
     }
-    printf("CRC: %lx.", NRF_RADIO->RXCRC);
-    printf("\n");
+    PRINTF("CRC: %lx.", NRF_RADIO->RXCRC);
+    PRINTF("\n");
     if(corrupt_msg_index == 0){
-      printf("No errors.\n");
+      PRINTF("No errors.\n");
     } else {
       int s;
       for(s=1; s<ROUND_LEN; s++){
         if(corrupt_msg_index & (1UL << s)){
-          printf("[%2d] ", s);
+          PRINTF("[%2d] ", s);
           uint8_t *pmsg_errors = (uint8_t *)&msg_errors[s];
           for(i=0; i<=msg.radio_len; i++){
-            printf("%02x ", pmsg_errors[i]);
+            PRINTF("%02x ", pmsg_errors[i]);
           }
-          printf("\n");
+          PRINTF("\n");
         }
       }
     }
     memset(&msg_errors, 0, ROUND_LEN*msg.radio_len);
     #endif /* PRINT_LAST_RX */
 
-    memset(my_rx_buffer, 0, msg.radio_len);
-
     #if PRINT_NODE_CONFIG
     if(round % 1024 == 0){
-      printf("#R %u, ID: 0x%lx %d, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s), msg: %d bytes, mode: %s, CE: %d, @ %s\n", 
+      PRINTF("#R %u, ID: 0x%lx %d, master: 0x%lx, tx power: %d dBm, channel %u = %u MHz (%s), msg: %d bytes, mode: %s, CE: %d, @ %s\n", 
               round, my_id, my_index, tx_node_id, (int8_t)BLE_DEFAULT_RF_POWER, BLE_DEFAULT_CHANNEL, 2400u+ble_hw_frequency_channels[BLE_DEFAULT_CHANNEL], OVERRIDE_BLE_CHANNEL_37 ? "not std" : "std", sizeof(ble_beacon_t), RADIO_MODE_TO_STR(RADIO_MODE_CONF), TEST_CE, FIRMWARE_TIMESTAMP_STR);
     }
-    #endif
+    #endif /* PRINT_NODE_CONFIG */
+#endif /* ENABLE_BLUEFLOOD_LOGS */
 
     if(rx_ok == 0){
       //did not receive for X round: resync
@@ -668,7 +686,7 @@ PROCESS_THREAD(tx_process, ev, data)
         synced = 0;
         joined = 0;
         #if PRINT_NODE_REJOIN_WARNING
-        printf("{fr-%d} Rejoining: failed rounds %d, joined %d, synced %d\n", (int)round, (int)failed_rounds, (int)joined, (int)synced);
+        PRINTF("{fr-%d} Rejoining: failed rounds %d, joined %d, synced %d\n", (int)round, (int)failed_rounds, (int)joined, (int)synced);
         #endif
       }
       failed_rounds++;
@@ -679,6 +697,7 @@ PROCESS_THREAD(tx_process, ev, data)
 
     round++;
     init_ibeacon_packet(&msg, &uuids_array[0][0], round, slot);
+    memset(my_rx_buffer, 0, msg.radio_len);
     //msg.round=round;
     rtimer_clock_t now, t_start_round_old;
     now = RTIMER_NOW();
@@ -687,13 +706,13 @@ PROCESS_THREAD(tx_process, ev, data)
     t_start_round += ROUND_PERIOD;
 
     if(round_is_late){
-      printf("#!{%d}PRE GO late: %ld\n", round, now - t_start_round);
+      #if PRINT_GO_LATE_WARNING
+      PRINTF("#!{%d}PRE GO late: %ld\n", round, now - t_start_round);
+      #endif /* PRINT_GO_LATE_WARNING */
       round_is_late = check_timer_miss(t_start_round, ROUND_PERIOD-TIMER_GUARD, now);
       t_start_round += ROUND_PERIOD;
     }
     
-
-
   #if BLUEFLOOD_BUSYWAIT
     /* wait at the end of the round */
     NRF_TIMER0->CC[0] = t_start_round - FIRST_SLOT_OFFSET;;
@@ -704,7 +723,7 @@ PROCESS_THREAD(tx_process, ev, data)
     rtimer_clock_t tnow = RTIMER_NOW();
     uint32_t rtc_ticks = RTIMER_TO_RTC((t_start_round - tnow))-RTC_GUARD; //save one RTC tick for preprocessing!
     rtimer_clock_t sleep_period = (t_start_round - tnow);
-    // printf("going to sleep: now %lu for %" PRId32 " hf = %lu hf %lu lf\n", tnow, sleep_period, RTC_TO_RTIMER(rtc_ticks), rtc_ticks);
+    // PRINTF("going to sleep: now %lu for %" PRId32 " hf = %lu hf %lu lf\n", tnow, sleep_period, RTC_TO_RTIMER(rtc_ticks), rtc_ticks);
     rtc_schedule(rtc_ticks);
     /* go to sleep mode: put prepherals to sleep then sleep the CPU */
     // NRF_RADIO->POWER = 0;
@@ -732,7 +751,7 @@ PROCESS_THREAD(tx_process, ev, data)
     // //correct the round timer based on the sleep time, because timer0 was sleeping // NO!
     // //XXX Timer0 is still counting. No need to adjust it.
     // // t_start_round -= RTC_TO_RTIMER(rtc_ticks);
-    // // printf("wakeup: now %lu for %" PRId32 " hf = %lu hf %lu lf\n", tnow2, sleep_period2, RTIMER_TO_RTC(sleep_period2), rtc_ticks);
+    // // PRINTF("wakeup: now %lu for %" PRId32 " hf = %lu hf %lu lf\n", tnow2, sleep_period2, RTIMER_TO_RTC(sleep_period2), rtc_ticks);
     guard_time = GUARD_TIME;
     tt = t_start_round - FIRST_SLOT_OFFSET;
     NRF_TIMER0->EVENTS_COMPARE[0]=0;
@@ -783,7 +802,7 @@ void RTC1_IRQHandler()
     // Disable COMPARE1 event and COMPARE1 interrupt:
     NRF_RTC1->EVTENCLR      = RTC_EVTENSET_COMPARE1_Msk;
     NRF_RTC1->INTENCLR      = RTC_INTENSET_COMPARE1_Msk;
-    //printf("poll\n");
+    //PRINTF("poll\n");
     NRF_RTC1->TASKS_STOP = 1;
     NVIC_DisableIRQ(RTC1_IRQn);
   }
