@@ -12,9 +12,11 @@
 #else
 #define SIZE_OF_UUID (16)
 #endif /* PACKET_TEST_SIZE_CONF */
-// #define PACKET_IBEACON_FORMAT ((RADIO_MODE_CONF != RADIO_MODE_MODE_Ieee802154_250Kbit) \
-//                               && ( !defined(PACKET_TEST_SIZE_CONF) \
-//                                   || (PACKET_TEST_SIZE_CONF > 22) ) )
+/* 
+#define PACKET_IBEACON_FORMAT ((RADIO_MODE_CONF != RADIO_MODE_MODE_Ieee802154_250Kbit) \
+                              && ( !defined(PACKET_TEST_SIZE_CONF) \
+                                  || (PACKET_TEST_SIZE_CONF > 22) ) )
+*/
 #define PACKET_IBEACON_FORMAT ( !defined(PACKET_TEST_SIZE_CONF) \
                                 || (PACKET_TEST_SIZE_CONF > 22) )
 

@@ -17,9 +17,6 @@
 //test CT with two nodes, where each node sends alone for 10 rounds to measure individual links
 #define TWO_NODES_EXPERIMENT (TESTBED==WIRED_TESTBED)
 
-#ifndef TESTBED_DIAMETER
-#define TESTBED_DIAMETER (4)
-#endif
 /* Put the node in sleep forever: for disabling nodes after jobs are done in the testbed. 
 * Do not enable this for normal use. This disables the mote.
 */
@@ -51,8 +48,8 @@
 
 #elif TESTBED==EXT_TESTBED_LSB
 
-#define TESTBED_IDS (uint32_t[]){0x30a1f91b, 0xa5bb378d, 0x53486dc5, 0x05838afd, 0x87748c61, \ 
-                                0x9bd0657d, 0xc184d1d6, 0xa6a0dac7, 0x14aeccfb, 0xfb424437, \ 
+#define TESTBED_IDS (uint32_t[]){0x30a1f91b, 0xa5bb378d, 0x53486dc5, 0x05838afd, 0x87748c61, \
+                                0x9bd0657d, 0xc184d1d6, 0xa6a0dac7, 0x14aeccfb, 0xfb424437, \
                                 0x0ef20233, 0xbd3b390c, 0xd29516a8, 0xe41838b8, 0xc53a20ee}
 #define TESTBED_PI_IDS (uint8_t[]){1,2,3,4,5,6,8,9,10,11,12,13,14,15,16}
 #define TESTBED_SIZE sizeof(TESTBED_PI_IDS)
@@ -183,6 +180,10 @@ mote20,mote21,mote22,mote24\
 
 #else
 #error "Define TESTBED!"
+#endif
+
+#ifndef TESTBED_DIAMETER
+#define TESTBED_DIAMETER (4)
 #endif
 
 #endif /* _TESTBED_H_ */
