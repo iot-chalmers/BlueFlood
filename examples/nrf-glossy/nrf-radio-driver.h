@@ -47,7 +47,7 @@
 /*---------------------------------------------------------------------------*/
 
 #include "testbed.h"
-#define ROUND_PERIOD_CONF_US (((ROUND_PERIOD_MS_PARAM)*RTIMER_SECOND)/1000)
+#define ROUND_PERIOD_CONF_US ((ROUND_PERIOD_MS_PARAM)*1000)
 
 /*---------------------------------------------------------------------------*/
 #ifndef RADIO_MODE_CONF

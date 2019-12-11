@@ -25,8 +25,8 @@
 #error "Define round period!"
 #endif
 #define ROUND_LEN_MAX (ROUND_RX_LEN+ROUND_LEN)
-
-#define ROUND_PERIOD (ROUND_PERIOD_CONF_US - ROUND_LEN_MAX * SLOT_LEN)
+#define ROUND_PERIOD_CONF_RTICKS US_TO_RTIMERTICKS(ROUND_PERIOD_CONF_US)
+#define ROUND_PERIOD (ROUND_PERIOD_CONF_RTICKS - ROUND_LEN_MAX * SLOT_LEN)
 /*---------------------------------------------------------------------------*/
 #if TESTBED!=WIRED_TESTBED
   #define LOG_STATE_SIZE (ROUND_LEN_MAX)
