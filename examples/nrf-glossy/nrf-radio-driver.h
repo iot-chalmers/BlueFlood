@@ -318,13 +318,32 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 /*---------------------------------------------------------------------------*/
 /* Output radio state on GPIO */
 #define PORT(P,PIN)                     ((P)*32uL+(PIN))
+
+#if TESTBED==GRAZ_TESTBED
+
+#define RADIO_ADDRESS_EVENT_PIN         PORT(1,1) // address      
+// #define RADIO_READY_EVENT_PIN        PORT(1,11) // disabled
+
+#define RADIO_TXEN_PIN                  PORT(1,2) // txen 
+#define RADIO_RXEN_PIN                  PORT(1,3) // rxen 
+// #define RADIO_PAYLOAD_PIN            PORT(1,14) // payload
+// #define RTC_SCHEDULE_PIN             PORT(1,11)  //disabled
+#define RTC_FIRE_PIN                    PORT(1,4)
+#define LED1_PIN                        PORT(1,5)
+#define LED2_PIN                        PORT(1,6)
+#define LED3_PIN                        PORT(1,7)
+#define LED4_PIN                        PORT(1,8)
+#define ROUND_INDICATOR_PIN             LED2_PIN 
+#define SLOT1_INDICATOR_PIN             LED3_PIN 
+
+#else
 #define RADIO_ADDRESS_EVENT_PIN         PORT(1,10) // address      
-// #define RADIO_READY_EVENT_PIN           PORT(1,11) // disabled
+// #define RADIO_READY_EVENT_PIN        PORT(1,11) // disabled
 
 #define RADIO_TXEN_PIN                  PORT(1,12) // txen 
 #define RADIO_RXEN_PIN                  PORT(1,13) // rxen 
 // #define RADIO_PAYLOAD_PIN            PORT(1,14) // payload
-#define RTC_SCHEDULE_PIN                PORT(0,30) 
+// #define RTC_SCHEDULE_PIN             PORT(0,30) 
 #define RTC_FIRE_PIN                    PORT(0,31)
 #define LED1_PIN                        PORT(0,13)
 #define LED2_PIN                        PORT(0,14)
@@ -332,6 +351,7 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 #define LED4_PIN                        PORT(0,16)
 #define ROUND_INDICATOR_PIN             LED2_PIN 
 #define SLOT1_INDICATOR_PIN             LED3_PIN 
+#endif /* TESTBED==GRAZ_TESTBED */
 
 // Peripheral channel assignments
 #define RADIO_ADDRESS_EVENT_GPIOTE_CH   0UL //PPI

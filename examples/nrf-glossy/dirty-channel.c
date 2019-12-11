@@ -475,6 +475,7 @@ PROCESS_THREAD(tx_process, ev, data)
                 guard_time = GUARD_TIME_SHORT;
                 synced = 1;
                 if(!IS_INITIATOR()){
+                  nrf_gpio_pin_toggle(SLOT1_INDICATOR_PIN);
                   slot = rx_pkt->slot;
                   logslot = slot + 1;
                   round = rx_pkt->round;
@@ -565,7 +566,9 @@ PROCESS_THREAD(tx_process, ev, data)
     my_radio_off_completely();
     // nrf_gpio_cfg_output(ROUND_INDICATOR_PIN);
     nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
-    
+    if(synced){
+      nrf_gpio_pin_toggle(SLOT1_INDICATOR_PIN);
+    }
     rx_ok_total += rx_ok;
     berr_total += berr;
     rx_failed_total += rx_crc_failed + rx_none;
@@ -767,7 +770,7 @@ PROCESS_THREAD(tx_process, ev, data)
 void rtc_schedule(uint32_t ticks)
 {     
   //trick: RTC schedule function will trigger overflow event to mirror that on the GPIO for debugging purposes
-  #if 1
+  #ifdef RTC_SCHEDULE_PIN
   // NVIC_DisableIRQ(RTC1_IRQn);
   // NRF_RTC1->EVTENSET |= RTC_EVTENSET_OVRFLW_Msk;
   // NRF_RTC1->TASKS_TRIGOVRFLW=1;
@@ -796,8 +799,10 @@ void rtc_schedule(uint32_t ticks)
 void RTC1_IRQHandler()
 {
   if(NRF_RTC1->EVENTS_COMPARE[1] == 1){
+    #ifdef RTC_SCHEDULE_PIN
     nrf_gpio_cfg_output(RTC_SCHEDULE_PIN);
     nrf_gpio_pin_toggle(RTC_SCHEDULE_PIN);
+    #endif
     NRF_RTC1->EVENTS_COMPARE[1] = 0;
     // Disable COMPARE1 event and COMPARE1 interrupt:
     NRF_RTC1->EVTENCLR      = RTC_EVTENSET_COMPARE1_Msk;

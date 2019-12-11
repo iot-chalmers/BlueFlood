@@ -623,8 +623,12 @@ void testbed_cofigure_pins()
   nrf_gpio_range_cfg_input(PORT(0,24),PORT(0,25), NRF_GPIO_PIN_NOPULL);
 
   nrf_gpio_range_cfg_output(LED1_PIN,LED4_PIN);//LEDS
+  #ifdef RTC_SCHEDULE_PIN
   nrf_gpio_cfg_output(RTC_SCHEDULE_PIN);//other gpio debugging pins
+  #endif
+  #ifdef RTC_FIRE_PIN
   nrf_gpio_cfg_output(RTC_FIRE_PIN);//other gpio debugging pins
+  #endif
   nrf_gpio_cfg_output(RADIO_ADDRESS_EVENT_PIN);
   nrf_gpio_cfg_output(ROUND_INDICATOR_PIN);
   nrf_gpio_cfg_output(RADIO_TXEN_PIN);
@@ -644,6 +648,10 @@ void testbed_clear_debug_pins()
   nrf_gpio_pin_clear(ROUND_INDICATOR_PIN);
   nrf_gpio_pin_clear(RADIO_TXEN_PIN);
   nrf_gpio_pin_clear(RADIO_RXEN_PIN);
+  #ifdef RTC_SCHEDULE_PIN
   nrf_gpio_pin_clear(RTC_SCHEDULE_PIN);
+  #endif
+  #ifdef RTC_FIRE_PIN
   nrf_gpio_pin_clear(RTC_FIRE_PIN);
+  #endif
 }
