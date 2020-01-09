@@ -261,17 +261,43 @@ graztestbedschedulecollect: graztestbedjson_collect
 grazqueue:
 	@curl -H "Content-Type: application/json" -X GET "https://iti-testbed.tugraz.at/api/queue?key=${GRAZ_APIKEY}"
 
+grazbatchdownload:
+	@for i in $(shell seq ${JOB_MIN} ${JOB_MAX}); do make grazdownload JOB_ID=$${i}; done;
+
+grazextractids:
+	@for i in $(seq 100 300); do if [ -f "graz_testbed/logs_${JOB_ID}/log_$${i}.txt" ]; then cpuid=$(shell head graz_testbed/logs_${JOB_ID}/log_$${i}.txt | grep -a "ID:" | cut -d':' -f6 |sort -u|cut -d',' -f1); printf "0x%x, " $${cpuid}; fi; if [ -f  graz_testbed/logs_${JOB_ID}/log_$${i}.txt ]; then printf "%d, " $${i}; fi; done; printf "\n" 
+
+quickpdr:
+	@for i in $(shell seq ${JOB_MIN} ${JOB_MAX}); do \
+	sh ./ble-glossy-logs-scripts/quickpdr.sh ${LOGS_PATH}/logs_%d $${i} $${i} log_%d.txt 100 227 | tee ${LOGS_PATH}/logs_$${i}/quickpdr.log; \
+	done;
+
+grazevaluatetxpower:
+	@for txpow in -2 0 2 4 8; do \
+	for mode in 3 4 5 6 15; do \
+	make clean && make capture=0 initiator=0 n_channels=3 overrive_ch37=0 round_robin_initiator=0 cpu_busywait=0 DURATION=${DURATION} ntx=4 tx_power=$${txpow} TESTBED_CONF=GRAZ_TESTBED ble_mode=$${mode} GRAZ_LAYOUT=1 period=200 jamming=0 log=true -j4 graztestbedschedule; \
+	done; \
+	done;
+
 grazdownload:
 	#extract the cookie token, login using username and password, then download using the login cookie. Finally, show the downloaded file size. Repeat until successful. Then, extract the logs and delete the zip file.
 	
-	@fsize=0; MIN_LOG_SIZE=50; \
-	while [ "$${fsize}" -lt "$${MIN_LOG_SIZE}" ]; do \
-	curl --silent -S -X GET -k --cookie /tmp/grazcookies.txt --cookie-jar /tmp/grazcookies.txt -H "cache-control: max-age=0" -H "dnt: 1" -H "sec-fetch-mode: navigate" -H "sec-fetch-site: same-origin" -H "upgrade-insecure-requests: 1" -H "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36" -w "\nhttp: %{http_code} %{content_type}\n" --output /tmp/grazlogin1.htm ${GRAZ_LOGIN_URL} ; \
+	@fsize=0; MIN_LOG_SIZE=50; counter=0; \
+	while [ "$${fsize}" -lt "$${MIN_LOG_SIZE}" ] && [ "$${counter}" -lt "4" ] ; do \
+	echo "Trial $${counter}:"; \
+	counter=$$(( $${counter} + 1 )); \
+	curl --silent -S -X GET -k --cookie /tmp/grazcookies.txt --cookie-jar /tmp/grazcookies.txt -H "cache-control: max-age=0" -H "dnt: 1" -H "sec-fetch-mode: navigate" -H "sec-fetch-site: same-origin" -H "upgrade-insecure-requests: 1" -H "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36" -w "http: %{http_code} %{content_type}\n" --output /tmp/grazlogin1.htm ${GRAZ_LOGIN_URL} ; \
 	CSRF=$$(cat /tmp/grazlogin1.htm | grep -a "csrf" | cut -d'=' -f5 | cut -d'"' -f2); \
-	curl --silent -S -X POST -k --cookie /tmp/grazcookies.txt --cookie-jar /tmp/grazcookies.txt -F "next=/queue/download_logs/${JOB_ID}" -F "email=${GRAZ_USERNAME}" -F "password=${GRAZ_PASSWORD}" -F "submit=Login" -F "csrf_token=$${CSRF}" -H "X-CSRFToken: $${CSRF}" -H "referer: ${GRAZ_LOGIN_URL}" -H "dnt: 1" -H "sec-fetch-mode: navigate" -H "sec-fetch-site: same-origin" -H "sec-fetch-user: ?1" -H "upgrade-insecure-requests: 1" -H "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36" -w "\nhttp: %{http_code} %{content_type}\n" --output /tmp/grazlogin2.htm ${GRAZ_LOGIN_URL} ; \
-	curl -o graz_testbed/logs_${JOB_ID}.zip --silent -S -X GET -k --cookie /tmp/grazcookies.txt --cookie-jar /tmp/grazcookies.txt "${GRAZ_LOG_URL}/${JOB_ID}" -H "X-CSRFToken: $${CSRF}" -H "cache-control: max-age=0" -H "dnt: 1" -H "sec-fetch-mode: navigate" -H "sec-fetch-site: same-origin" -H "sec-fetch-user: ?1" -H "upgrade-insecure-requests: 1" -H "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36" -w "\nhttp: %{http_code} %{content_type} %{size_download}\n"; \
-	fsize=$$(du -k 'graz_testbed/logs_${JOB_ID}.zip' | cut -f1); echo $${fsize}; \
-	if [ "$${fsize}" -gt "$${MIN_LOG_SIZE}" ]; then mkdir -p graz_testbed/logs_${JOB_ID}; tar xvf graz_testbed/logs_${JOB_ID}.zip -C graz_testbed/logs_${JOB_ID}; fi; \
+	curl --silent -S -X POST -k --cookie /tmp/grazcookies.txt --cookie-jar /tmp/grazcookies.txt -F "next=/queue/download_logs/${JOB_ID}" -F "email=${GRAZ_USERNAME}" -F "password=${GRAZ_PASSWORD}" -F "submit=Login" -F "csrf_token=$${CSRF}" -H "X-CSRFToken: $${CSRF}" -H "referer: ${GRAZ_LOGIN_URL}" -H "dnt: 1" -H "sec-fetch-mode: navigate" -H "sec-fetch-site: same-origin" -H "sec-fetch-user: ?1" -H "upgrade-insecure-requests: 1" -H "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36" -w "http: %{http_code} %{content_type}\n" --output /tmp/grazlogin2.htm ${GRAZ_LOGIN_URL} ; \
+	curl -o graz_testbed/logs_${JOB_ID}.zip --silent -S -X GET -k --cookie /tmp/grazcookies.txt --cookie-jar /tmp/grazcookies.txt "${GRAZ_LOG_URL}/${JOB_ID}" -H "X-CSRFToken: $${CSRF}" -H "cache-control: max-age=0" -H "dnt: 1" -H "sec-fetch-mode: navigate" -H "sec-fetch-site: same-origin" -H "sec-fetch-user: ?1" -H "upgrade-insecure-requests: 1" -H "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36" -w "http: %{http_code} %{content_type} %{size_download}\n"; \
+	fsize=$$(du -k 'graz_testbed/logs_${JOB_ID}.zip' | cut -f1); \
+	if [ "$${fsize}" -gt "$${MIN_LOG_SIZE}" ]; then \
+	echo "Downloaded logs_${JOB_ID}.zip, size: $${fsize} KB. Extracting then deleting zip file: "; \
+	mkdir -p graz_testbed/logs_${JOB_ID}; \
+	tar xvf graz_testbed/logs_${JOB_ID}.zip -C graz_testbed/logs_${JOB_ID}; \
+	else \
+	echo "Failed: deleting logs_${JOB_ID}.zip as the file size is too small to be valid: $${fsize} KB"; \
+	fi; \
 	done; \
 	rm -rf graz_testbed/logs_${JOB_ID}.zip;
 
