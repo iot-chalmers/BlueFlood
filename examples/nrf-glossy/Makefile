@@ -12,10 +12,23 @@ GRAZ_LAYOUT ?= 1
 log ?= true
 jamming ?= 0
 
+##### include these testbed credentials
+# CAU_USER:=
+# CAU_PORT:=
+# CAU_SERVER:=
+# CAU_TESTBED_USER:=
+
+# HOME_TESTBED_EXT_URL:=
+# HOME_TESTBED_INT_URL:=
+# HOME_TESTBED_INT_PORT:=
+# HOME_TESTBED_EXT_PORT:=
+# HOME_TESTBED_USER:=
+include testbeds_credentials.env
+
 GCC_INSTALL_ROOT	:= ~/opt/gnu-mcu-eclipse/arm-none-eabi-gcc/7.2.1-1.1-20180401-0515
 GCC_VERSION			:= 7.2.1
 GCC_PREFIX			:= arm-none-eabi
-USER:=ban
+
 
 #UART_BAUDRATE_BAUDRATE_Baud115200=0x01D7E000 #/*!< 115200 baud (actual rate: 115942) */
 #UART_BAUDRATE_BAUDRATE_Baud230400=0x03AFB000 #/*!< 230400 baud (actual rate: 231884) */
@@ -147,48 +160,48 @@ all: $(CONTIKI_PROJECT)
 	cp $(CONTIKI_PROJECT).hex $(FIRMWARE_NAME).hex
 
 start_jobs:
-	ssh -p17122 testbed@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py start"
+	ssh -p${CAU_PORT} ${CAU_TESTBED_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py start"
 
 #make testbedschedule NAME=hello DURATION=2 FNAME=dirty-channel
 testbedsync:
-	rsync -ravz -e "ssh -p17122" ${USER}@sunlight.ds.informatik.uni-kiel.de:/home/${USER}/jobs/ ./cau_testbed/
+	rsync -ravz -e "ssh -p${CAU_PORT}" ${CAU_USER}@${CAU_SERVER}:/home/${CAU_USER}/jobs/ ./cau_testbed/
 
 testbedschedule2: 
-	scp -P17122 $(FNAME).hex testbed@sunlight.ds.informatik.uni-kiel.de:/home/testbed/newjob.nrf52.hex
-	ssh -p17122 testbed@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/testbed/newjob.nrf52.hex"
+	scp -P${CAU_PORT} $(FNAME).hex ${CAU_TESTBED_USER}@${CAU_SERVER}:/home/${CAU_TESTBED_USER}/newjob.nrf52.hex
+	ssh -p${CAU_PORT} ${CAU_TESTBED_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/${CAU_TESTBED_USER}/newjob.nrf52.hex"
 
 testbedstart: 
-	# ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py status"
-	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py start"
+	# ssh -p${CAU_PORT} ${CAU_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py status"
+	ssh -p${CAU_PORT} ${CAU_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py start"
 
 testbedschedule: 
-	scp -P17122 $(FNAME).hex ban@sunlight.ds.informatik.uni-kiel.de:/home/ban/newjob.nrf52.hex
-	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex --hosts /home/ban/all-hosts"
+	scp -P${CAU_PORT} $(FNAME).hex ${CAU_USER}@${CAU_SERVER}:/home/${CAU_USER}/newjob.nrf52.hex
+	ssh -p${CAU_PORT} ${CAU_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/${CAU_USER}/newjob.nrf52.hex --hosts /home/${CAU_USER}/all-hosts"
 
 testbedschedulehomeext: 
-	scp -P21382 $(FNAME).hex boo@beshr.hopto.org:/home/boo/newjob.nrf52.hex
-	ssh -p21382 boo@beshr.hopto.org "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/boo/newjob.nrf52.hex --hosts /home/boo/all-hosts"
+	scp -P${HOME_TESTBED_EXT_PORT} $(FNAME).hex ${HOME_TESTBED_USER}@${HOME_TESTBED_EXT_URL}:/home/${HOME_TESTBED_USER}/newjob.nrf52.hex
+	ssh -p${HOME_TESTBED_EXT_PORT} ${HOME_TESTBED_USER}@${HOME_TESTBED_EXT_URL} "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/${HOME_TESTBED_USER}/newjob.nrf52.hex --hosts /home/${HOME_TESTBED_USER}/all-hosts"
 
 testbedschedulehome: 
-	scp -P9999 $(FNAME).hex boo@boo-p:/home/boo/newjob.nrf52.hex
-	ssh -p9999 boo@boo-p "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/boo/newjob.nrf52.hex --hosts /home/boo/all-hosts"
+	scp -P${HOME_TESTBED_INT_PORT} $(FNAME).hex ${HOME_TESTBED_USER}@${HOME_TESTBED_INT_URL}:/home/${HOME_TESTBED_USER}/newjob.nrf52.hex
+	ssh -p${HOME_TESTBED_INT_PORT} ${HOME_TESTBED_USER}@${HOME_TESTBED_INT_URL} "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/${HOME_TESTBED_USER}/newjob.nrf52.hex --hosts /home/${HOME_TESTBED_USER}/all-hosts"
 
 testbedsynchome:
-	rsync -ravz -e "ssh -p9999" boo@boo-p:/home/boo/jobs/ ./home_testbed/
+	rsync -ravz -e "ssh -p${HOME_TESTBED_INT_PORT}" ${HOME_TESTBED_USER}@${HOME_TESTBED_INT_URL}:/home/${HOME_TESTBED_USER}/jobs/ ./home_testbed/
 
 testbedstarthome:
-	ssh -p9999 boo@boo-p "python /usr/testbed/scripts/testbed.py start"
+	ssh -p${HOME_TESTBED_INT_PORT} ${HOME_TESTBED_USER}@${HOME_TESTBED_INT_URL} "python /usr/testbed/scripts/testbed.py start"
 
 testbedstarthomeext:
-	ssh -p21382 boo@beshr.hopto.org "python /usr/testbed/scripts/testbed.py start"
+	ssh -p${HOME_TESTBED_EXT_PORT} ${HOME_TESTBED_USER}@${HOME_TESTBED_EXT_URL} "python /usr/testbed/scripts/testbed.py start"
 
 testbedsynchomeext:
-	rsync -ravz -e "ssh -p21382" boo@beshr.hopto.org:/home/boo/jobs/ ./home_testbed/
+	rsync -ravz -e "ssh -p${HOME_TESTBED_EXT_PORT}" ${HOME_TESTBED_USER}@${HOME_TESTBED_EXT_URL}:/home/${HOME_TESTBED_USER}/jobs/ ./home_testbed/
 
 testbedjob: $(CONTIKI_PROJECT)
 	cp $(CONTIKI_PROJECT).hex $(FIRMWARE_NAME).hex
-	scp -P17122 ${FIRMWARE_NAME}.hex ban@sunlight.ds.informatik.uni-kiel.de:/home/ban/newjob.nrf52.hex
-	ssh -p17122 ban@sunlight.ds.informatik.uni-kiel.de "python /usr/testbed/scripts/testbed.py create --name '${EXPNAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex"
+	scp -P${CAU_PORT} ${FIRMWARE_NAME}.hex ${CAU_USER}@${CAU_SERVER}:/home/${CAU_USER}/newjob.nrf52.hex
+	ssh -p${CAU_PORT} ${CAU_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py create --name '${EXPNAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/${CAU_USER}/newjob.nrf52.hex"
 
 date:
 	echo "$(DATE)" $(COUNT_ACTIVE_NODES)
