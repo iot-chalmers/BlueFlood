@@ -5,13 +5,14 @@
 
 
 #default settings
-DURATION=20
-tx_power=-20
+DURATION=5
+period=200
+tx_power=-8
 capture=0
 ble_mode=3 #/*!< 1 Mbit/s Bluetooth Low Energy */
 tx_offset=0
 packet_size=38 #default PDU for standard ibeacon
-n_channels=1 #number of RF channels to use
+n_channels=3 #number of RF channels to use
 overrive_ch37=0 #use WiFi and Bluetooth free frequency for ch37
 ntx=4
 initiator=0
@@ -95,7 +96,7 @@ sync () {
 }
 
 run () {
-    make clean && make TESTBED_CONF=${TESTBED_CONF} initiator=${initiator} round_robin_initiator=${round_robin_initiator} n_channels=${n_channels} overrive_ch37=${overrive_ch37} cpu_busywait=0 ble_mode=${ble_mode} tx_power=${tx_power} tx_offset=${tx_offset} capture=${capture} ntx=${ntx} packet_size=${packet_size} all -j4
+    make clean && make TESTBED_CONF=${TESTBED_CONF} initiator=${initiator} round_robin_initiator=${round_robin_initiator} n_channels=${n_channels} overrive_ch37=${overrive_ch37} cpu_busywait=0 ble_mode=${ble_mode} tx_power=${tx_power} tx_offset=${tx_offset} capture=${capture} ntx=${ntx} packet_size=${packet_size} period=${period} all -j4
     ##save firmware with timestamp and parameters
     DATE=$(date +'%Y_%m_%d_%H_%M_%S')
     EXPERIMENT_PARAM_TMP=ble_mode_${ble_mode}_txpower_${tx_power}_txoffset_${tx_offset}_capture_${capture}_packet_size_${packet_size}_nch_${n_channels}_och_${overrive_ch37}_ntx_${ntx}_i_${initiator}_testbed_${TESTBED_CONF}
@@ -131,13 +132,13 @@ evaluate() {
 
     for n_channels in 3;
     do
-        for ble_mode in 3 4 5 6 15; #3 4 5 6; ##evaluate the different BLE modes
+        for ble_mode in 5 6 15; #3 4 5 6; ##evaluate the different BLE modes
         do
-            for tx_power in -16 -8 -4 0 4 8 #`seq -16 4 8`; #-20 -16 .. 4 
+            for tx_power in -8 -4 0 4 8 #`seq -16 4 8`; #-20 -16 .. 4 
             do
-                for packet_size in 38 76;
+                for packet_size in 38;
                 do
-                    for ntx in 2 4 8;
+                    for ntx in ${ntx};
                     do
                         run
                     done

@@ -48,7 +48,7 @@ Ble_LR125Kbit=5 #/*!< Long range 125 kbit/s (TX Only - RX supports both) */
 Ble_LR500Kbit=6 #/*!< Long range 500 kbit/s (TX Only - RX supports both) */
 Ieee802154_250Kbit=15 #/*!< IEEE 802.15.4-2006 250 kbit/s */
 
-period ?= 100 #in ms
+period ?= 200 #in ms
 tx_power ?= 0 #in dB
 capture ?= 0 #evaluate capture mode
 ble_mode ?= $(Ble_1Mbit) #Bluetooth mode
@@ -208,6 +208,12 @@ date:
 
 sync-logs:
 	rsync --progress -avz ./ble-glossy-logs-scripts/ /Volumes/beshr/beshr/ble-glossy-logs-scripts/
+	rsync --progress -avz ./exp-logs /Volumes/beshr/beshr/ble-glossy-logs-scripts/
+	rsync --progress -avz ./graz_testbed /Volumes/beshr/beshr/ble-glossy-logs-scripts/
+	rsync --progress -avz ./cau_testbed /Volumes/beshr/beshr/ble-glossy-logs-scripts/
+	rsync --progress -avz ./home_testbed /Volumes/beshr/beshr/ble-glossy-logs-scripts/
+	# rsync --progress -avz ./testbedjobscopy /Volumes/beshr/beshr/ble-glossy-logs-scripts/
+	# rsync --progress -avz ./testbedhex /Volumes/beshr/beshr/ble-glossy-logs-scripts/
 
 programext:
 	#make dirty-channel.flash MOTE=100
@@ -285,10 +291,23 @@ quickpdr:
 	sh ./ble-glossy-logs-scripts/quickpdr.sh ${LOGS_PATH}/logs_%d $${i} $${i} log_%d.txt 100 227 | tee ${LOGS_PATH}/logs_$${i}/quickpdr.log; \
 	done;
 
+quickpdrcau:
+	@for i in $(shell seq ${JOB_MIN} ${JOB_MAX}); do \
+	de=$(shell ls ./cau_testbed/$${i}* | grep -o "[^/]*$"); echo $${de};\
+	sh ./ble-glossy-logs-scripts/quickpdr.sh ./cau_testbed/%d* $${i} $${i} logs/raspi%02d/log.txt 1 21; \
+	done;
+
 grazevaluatetxpower:
-	@for txpow in -2 0 2 4 8; do \
+	@for txpow in 0 2 4 8; do \
 	for mode in 3 4 5 6 15; do \
 	make clean && make capture=0 initiator=0 n_channels=3 overrive_ch37=0 round_robin_initiator=0 cpu_busywait=0 DURATION=${DURATION} ntx=4 tx_power=$${txpow} TESTBED_CONF=GRAZ_TESTBED ble_mode=$${mode} GRAZ_LAYOUT=1 period=200 jamming=0 log=true -j4 graztestbedschedule; \
+	done; \
+	done;
+
+grazevaluatentx:
+	@for ntx in 2 8; do \
+	for mode in 3 4 5 6 15; do \
+	make clean && make capture=0 initiator=0 n_channels=3 overrive_ch37=0 round_robin_initiator=0 cpu_busywait=0 DURATION=${DURATION} ntx=$${ntx} tx_power=8 TESTBED_CONF=GRAZ_TESTBED ble_mode=$${mode} GRAZ_LAYOUT=1 period=200 jamming=0 log=true -j4 graztestbedschedule; \
 	done; \
 	done;
 
