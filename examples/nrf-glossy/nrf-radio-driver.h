@@ -89,7 +89,7 @@
 #endif
 /*---------------------------------------------------------------------------*/
 #define TRIGGER_RADIO_START_WITH_TIMER (true)
-#define NRF_RADIO_DEBUG_STATE true
+#define NRF_RADIO_DEBUG_STATE (TESTBED!=GRAZ_TESTBED)
 #define RADIO_REV_C_OR_RADIO_REV_1 false
 /*---------------------------------------------------------------------------*/
 #define BLE_MODE_BIT_TIME_X2(M) ( (M==RADIO_MODE_MODE_Ble_1Mbit) ? 2 : ((M==RADIO_MODE_MODE_Ble_2Mbit) ? 1 : ((M==RADIO_MODE_MODE_Ble_LR500Kbit) ? 4 : ((M==RADIO_MODE_MODE_Ble_LR125Kbit) ? 16 : ((M==RADIO_MODE_MODE_Ieee802154_250Kbit) ? 8 : 0)))) )
@@ -320,37 +320,36 @@ extern const uint8_t ble_channels_list[NUMBER_OF_CHANNELS];
 #define PORT(P,PIN)                     ((P)*32uL+(PIN))
 
 #if TESTBED==GRAZ_TESTBED
+#define LED1_PIN                        PORT(1,5)
+#define LED2_PIN                        PORT(1,6)
+#define LED3_PIN                        PORT(1,7)
+#define LED4_PIN                        PORT(1,8)
 
-#define RADIO_ADDRESS_EVENT_PIN         PORT(1,1) // address      
+#define ROUND_INDICATOR_PIN             LED2_PIN 
+#define SLOT1_INDICATOR_PIN             LED3_PIN 
+#define RADIO_ADDRESS_EVENT_PIN         LED4_PIN     
 // #define RADIO_READY_EVENT_PIN        PORT(1,11) // disabled
-
 #define RADIO_TXEN_PIN                  PORT(1,2) // txen 
 #define RADIO_RXEN_PIN                  PORT(1,3) // rxen 
 // #define RADIO_PAYLOAD_PIN            PORT(1,14) // payload
 // #define RTC_SCHEDULE_PIN             PORT(1,11)  //disabled
 #define RTC_FIRE_PIN                    PORT(1,4)
-#define LED1_PIN                        PORT(1,5)
-#define LED2_PIN                        PORT(1,6)
-#define LED3_PIN                        PORT(1,7)
-#define LED4_PIN                        PORT(1,8)
-#define ROUND_INDICATOR_PIN             LED2_PIN 
-#define SLOT1_INDICATOR_PIN             LED3_PIN 
 
 #else
+#define LED1_PIN                        PORT(0,13)
+#define LED2_PIN                        PORT(0,14)
+#define LED3_PIN                        PORT(0,15)
+#define LED4_PIN                        PORT(0,16)
+
+#define ROUND_INDICATOR_PIN             LED2_PIN 
+#define SLOT1_INDICATOR_PIN             LED3_PIN 
 #define RADIO_ADDRESS_EVENT_PIN         PORT(1,10) // address      
 // #define RADIO_READY_EVENT_PIN        PORT(1,11) // disabled
-
 #define RADIO_TXEN_PIN                  PORT(1,12) // txen 
 #define RADIO_RXEN_PIN                  PORT(1,13) // rxen 
 // #define RADIO_PAYLOAD_PIN            PORT(1,14) // payload
 // #define RTC_SCHEDULE_PIN             PORT(0,30) 
 #define RTC_FIRE_PIN                    PORT(0,31)
-#define LED1_PIN                        PORT(0,13)
-#define LED2_PIN                        PORT(0,14)
-#define LED3_PIN                        PORT(0,15)
-#define LED4_PIN                        PORT(0,16)
-#define ROUND_INDICATOR_PIN             LED2_PIN 
-#define SLOT1_INDICATOR_PIN             LED3_PIN 
 #endif /* TESTBED==GRAZ_TESTBED */
 
 // Peripheral channel assignments

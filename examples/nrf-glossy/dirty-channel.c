@@ -411,7 +411,7 @@ PROCESS_THREAD(tx_process, ev, data)
             rx_tref = t_start_round - FIRST_SLOT_OFFSET;
             rx_toffset = slot * SLOT_LEN + FIRST_SLOT_OFFSET - ADDRESS_EVENT_T_TX_OFFSET - guard_time;
             rx_missed_slot = check_timer_miss(rx_tref, rx_toffset, rx_tn);
-            nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
+            // nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
             if(!rx_missed_slot){
               // t_proc = RTIMER_NOW();
               schedule_rx_abs(my_rx_buffer, GET_CHANNEL(round, slot), rx_target_time);
@@ -419,7 +419,7 @@ PROCESS_THREAD(tx_process, ev, data)
               BUSYWAIT_UNTIL_ABS(NRF_TIMER0->EVENTS_COMPARE[0] != 0U, rx_target_time + 2*guard_time + SLOT_PROCESSING_TIME_PKT_START );
               slot_started = NRF_TIMER0->EVENTS_COMPARE[0];
               if(slot_started){
-                nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
+                // nrf_gpio_pin_toggle(ROUND_INDICATOR_PIN);
                 #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
                 BUSYWAIT_UNTIL_ABS(NRF_RADIO->EVENTS_FRAMESTART != 0U, rx_target_time + 2*guard_time + SLOT_PROCESSING_TIME_PKT_START + ADDRESS_EVENT_T_TX_OFFSET );
                 got_address_event = NRF_RADIO->EVENTS_FRAMESTART;
