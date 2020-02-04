@@ -97,7 +97,13 @@ typedef struct __attribute__((packed)) ble_beacon_struct {
     };
   };
   #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
-  uint16_t CRC_OR_RSSI_LQI;
+  union{
+    uint16_t CRC_OR_RSSI_LQI;
+    struct{
+      uint8_t lqi;
+      uint8_t DUMMY;
+    }
+  }
   #endif
 } ble_beacon_t;
 #endif
