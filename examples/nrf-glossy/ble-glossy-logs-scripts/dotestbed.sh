@@ -5,7 +5,7 @@
 
 
 #default settings
-DURATION=5
+DURATION=10
 period=200
 tx_power=-8
 capture=0
@@ -132,13 +132,18 @@ evaluate() {
 
     for n_channels in 3;
     do
-        for ble_mode in 5 6 15; #3 4 5 6; ##evaluate the different BLE modes
+        for ble_mode in 3 4 5 6 15; ##evaluate the different BLE modes
         do
             for tx_power in -8 -4 0 4 8 #`seq -16 4 8`; #-20 -16 .. 4 
             do
-                for packet_size in 38;
+                for packet_size in 19 76;
                 do
-                    for ntx in ${ntx};
+                    if [ "$packet_size" == "76" ]; then 
+                        period=400;
+                    else
+                        period=200;
+                    fi; 
+                    for ntx in 4;
                     do
                         run
                     done

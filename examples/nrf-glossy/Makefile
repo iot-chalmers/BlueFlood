@@ -61,7 +61,7 @@ ntx ?= 4 #how many repititions
 initiator?=0 #initiator node ID
 test_mode_tx_carrier?=0 #do not tx/rx data, but transmit a constant unmodulated carrier (by keeping the radio in idle mode in slots instead of starting tx/rx)
 #unnecessary
-DURATION ?= 120 #duration of the experiment
+DURATION ?= 10 #duration of the experiment
 TESTBED_CONF?=WIRED_TESTBED #Default testbed 
 round_robin_initiator ?= 0 #switch initiator every round
 cpu_busywait ?= 0
@@ -207,13 +207,13 @@ date:
 	echo "$(DATE)" $(COUNT_ACTIVE_NODES)
 
 sync-logs:
-	rsync --progress -avz ./ble-glossy-logs-scripts/ /Volumes/beshr/beshr/ble-glossy-logs-scripts/
-	rsync --progress -avz ./exp-logs /Volumes/beshr/beshr/ble-glossy-logs-scripts/
-	rsync --progress -avz ./graz_testbed /Volumes/beshr/beshr/ble-glossy-logs-scripts/
-	rsync --progress -avz ./cau_testbed /Volumes/beshr/beshr/ble-glossy-logs-scripts/
-	rsync --progress -avz ./home_testbed /Volumes/beshr/beshr/ble-glossy-logs-scripts/
-	# rsync --progress -avz ./testbedjobscopy /Volumes/beshr/beshr/ble-glossy-logs-scripts/
-	# rsync --progress -avz ./testbedhex /Volumes/beshr/beshr/ble-glossy-logs-scripts/
+	rsync --progress -avz ./ble-glossy-logs-scripts /Volumes/beshr_2/experiments_data
+	rsync --progress -avz ./exp-logs /Volumes/beshr_2/experiments_data
+	rsync --progress -avz ./graz_testbed /Volumes/beshr_2/experiments_data
+	rsync --progress -avz ./cau_testbed /Volumes/beshr_2/experiments_data
+	rsync --progress -avz ./home_testbed /Volumes/beshr_2/experiments_data
+	# rsync --progress -avz ./testbedjobscopy /Volumes/beshr_2/experiments_data
+	# rsync --progress -avz ./testbedhex /Volumes/beshr_2/experiments_data
 
 programext:
 	#make dirty-channel.flash MOTE=100
@@ -305,11 +305,30 @@ grazevaluatetxpower:
 	done;
 
 grazevaluatentx:
-	@for ntx in 2 8; do \
+	@tries=3; \
+	repeat=0; while [ "$${repeat}" -lt "$${tries}" ] ; do \
+		echo "Repeatition $${repeat}:"; \
+		repeat=$$(( $${repeat} + 1 )); \
+			for ntx in 2 3 4 8; do \
+				for mode in 3 4 5 6 15; do \
+					make clean && make capture=0 initiator=0 n_channels=3 overrive_ch37=0 round_robin_initiator=0 cpu_busywait=0 DURATION=${DURATION} ntx=$${ntx} tx_power=8 TESTBED_CONF=GRAZ_TESTBED ble_mode=$${mode} GRAZ_LAYOUT=1 period=300 jamming=0 log=true -j4 graztestbedschedule; \
+				done; \
+			done; \
+	done; 
+
+grazevaluatench:
+	@for nch in 9 40; do \
 	for mode in 3 4 5 6 15; do \
-	make clean && make capture=0 initiator=0 n_channels=3 overrive_ch37=0 round_robin_initiator=0 cpu_busywait=0 DURATION=${DURATION} ntx=$${ntx} tx_power=8 TESTBED_CONF=GRAZ_TESTBED ble_mode=$${mode} GRAZ_LAYOUT=1 period=200 jamming=0 log=true -j4 graztestbedschedule; \
+	make clean && make capture=0 initiator=0 n_channels=$${nch} overrive_ch37=0 round_robin_initiator=0 cpu_busywait=0 DURATION=${DURATION} ntx=4 tx_power=8 TESTBED_CONF=GRAZ_TESTBED ble_mode=$${mode} GRAZ_LAYOUT=1 period=200 jamming=0 log=true -j4 graztestbedschedule; \
 	done; \
-	done;
+	done; 
+
+grazevaluatepkt:
+	@for pkt in 76; do \
+	for mode in 3 4 5 6 15; do \
+	make clean && make capture=0 initiator=0 packet_size=$${pkt} n_channels=3 overrive_ch37=0 round_robin_initiator=0 cpu_busywait=0 DURATION=${DURATION} ntx=4 tx_power=8 TESTBED_CONF=GRAZ_TESTBED ble_mode=$${mode} GRAZ_LAYOUT=1 period=200 jamming=0 log=true -j4 graztestbedschedule; \
+	done; \
+	done; 
 
 grazdownload:
 	#extract the cookie token, login using username and password, then download using the login cookie. Finally, show the downloaded file size. Repeat until successful. Then, extract the logs and delete the zip file.
