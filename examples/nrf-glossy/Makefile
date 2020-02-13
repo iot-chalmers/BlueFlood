@@ -164,7 +164,7 @@ start_jobs:
 
 #make testbedschedule NAME=hello DURATION=2 FNAME=dirty-channel
 testbedsync:
-	rsync -ravz -e "ssh -p${CAU_PORT}" ${CAU_USER}@${CAU_SERVER}:/home/${CAU_USER}/jobs/ ./cau_testbed/
+	rsync -ravz --no-perms --no-owner --no-group -e "ssh -p${CAU_PORT}" ${CAU_USER}@${CAU_SERVER}:/home/${CAU_USER}/jobs/ ./cau_testbed/
 
 testbedschedule2: 
 	scp -P${CAU_PORT} $(FNAME).hex ${CAU_TESTBED_USER}@${CAU_SERVER}:/home/${CAU_TESTBED_USER}/newjob.nrf52.hex
@@ -173,6 +173,11 @@ testbedschedule2:
 testbedstart: 
 	# ssh -p${CAU_PORT} ${CAU_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py status"
 	ssh -p${CAU_PORT} ${CAU_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py start"
+
+testbedcompileschedule: $(CONTIKI_PROJECT)
+	cp $(CONTIKI_PROJECT).hex $(FIRMWARE_NAME).hex
+	scp -P${CAU_PORT} $(CONTIKI_PROJECT).hex ${CAU_USER}@${CAU_SERVER}:/home/${CAU_USER}/newjob.nrf52.hex
+	ssh -p${CAU_PORT} ${CAU_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py create --name '${FIRMWARE_NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/${CAU_USER}/newjob.nrf52.hex --hosts /home/${CAU_USER}/all-hosts"
 
 testbedschedule: 
 	scp -P${CAU_PORT} $(FNAME).hex ${CAU_USER}@${CAU_SERVER}:/home/${CAU_USER}/newjob.nrf52.hex
@@ -187,7 +192,7 @@ testbedschedulehome:
 	ssh -p${HOME_TESTBED_INT_PORT} ${HOME_TESTBED_USER}@${HOME_TESTBED_INT_URL} "python /usr/testbed/scripts/testbed.py create --name '${NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/${HOME_TESTBED_USER}/newjob.nrf52.hex --hosts /home/${HOME_TESTBED_USER}/all-hosts"
 
 testbedsynchome:
-	rsync -ravz -e "ssh -p${HOME_TESTBED_INT_PORT}" ${HOME_TESTBED_USER}@${HOME_TESTBED_INT_URL}:/home/${HOME_TESTBED_USER}/jobs/ ./home_testbed/
+	rsync -ravz --no-perms --no-owner --no-group -e "ssh -p${HOME_TESTBED_INT_PORT}" ${HOME_TESTBED_USER}@${HOME_TESTBED_INT_URL}:/home/${HOME_TESTBED_USER}/jobs/ ./home_testbed/
 
 testbedstarthome:
 	ssh -p${HOME_TESTBED_INT_PORT} ${HOME_TESTBED_USER}@${HOME_TESTBED_INT_URL} "python /usr/testbed/scripts/testbed.py start"
@@ -196,7 +201,7 @@ testbedstarthomeext:
 	ssh -p${HOME_TESTBED_EXT_PORT} ${HOME_TESTBED_USER}@${HOME_TESTBED_EXT_URL} "python /usr/testbed/scripts/testbed.py start"
 
 testbedsynchomeext:
-	rsync -ravz -e "ssh -p${HOME_TESTBED_EXT_PORT}" ${HOME_TESTBED_USER}@${HOME_TESTBED_EXT_URL}:/home/${HOME_TESTBED_USER}/jobs/ ./home_testbed/
+	rsync -ravz --no-perms --no-owner --no-group -e "ssh -p${HOME_TESTBED_EXT_PORT}" ${HOME_TESTBED_USER}@${HOME_TESTBED_EXT_URL}:/home/${HOME_TESTBED_USER}/jobs/ ./home_testbed/
 
 testbedjob: $(CONTIKI_PROJECT)
 	cp $(CONTIKI_PROJECT).hex $(FIRMWARE_NAME).hex
@@ -207,11 +212,11 @@ date:
 	echo "$(DATE)" $(COUNT_ACTIVE_NODES)
 
 sync-logs:
-	rsync --progress -avz ./ble-glossy-logs-scripts /Volumes/beshr_2/experiments_data
-	rsync --progress -avz ./exp-logs /Volumes/beshr_2/experiments_data
-	rsync --progress -avz ./graz_testbed /Volumes/beshr_2/experiments_data
-	rsync --progress -avz ./cau_testbed /Volumes/beshr_2/experiments_data
-	rsync --progress -avz ./home_testbed /Volumes/beshr_2/experiments_data
+	rsync --progress -avz --no-perms --no-owner --no-group ./ble-glossy-logs-scripts /Volumes/beshr_2/experiments_data
+	rsync --progress -avz --no-perms --no-owner --no-group ./exp-logs /Volumes/beshr_2/experiments_data
+	rsync --progress -avz --no-perms --no-owner --no-group ./graz_testbed /Volumes/beshr_2/experiments_data
+	rsync --progress -avz --no-perms --no-owner --no-group ./cau_testbed /Volumes/beshr_2/experiments_data
+	rsync --progress -avz --no-perms --no-owner --no-group ./home_testbed /Volumes/beshr_2/experiments_data
 	# rsync --progress -avz ./testbedjobscopy /Volumes/beshr_2/experiments_data
 	# rsync --progress -avz ./testbedhex /Volumes/beshr_2/experiments_data
 
