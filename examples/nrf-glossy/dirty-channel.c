@@ -232,6 +232,8 @@ PROCESS_THREAD(tx_process, ev, data)
 
   if(IS_INITIATOR()){
     // BUSYWAIT_UNTIL(0, RTIMER_SECOND);
+    nrf_delay_ms(2000);
+  } else{
     nrf_delay_ms(1000);
   }
 
@@ -376,14 +378,13 @@ PROCESS_THREAD(tx_process, ev, data)
           got_payload_event=0, got_address_event=0, got_end_event = 0, slot_started = 0, last_crc_is_ok = 0, last_rx_ok = 0;
           uint8_t channel = 0;
           if(!joined){ /* slave bootstrap code */
-            int r=0, s=0;
+            // int r=0, s=0;
             /* hop the channel when we have waited long enough on one channel: 2*N/(NTX/2) rounds */
-            if( (join_trial % (MAX(12,2*NUMBER_OF_CHANNELS)/NTX) == 0)){
-              s=random_rand();
-              // channel=GET_CHANNEL(r,s);
-              join_trial++;
+            if( join_trial++ % (MAX(12,2*NUMBER_OF_CHANNELS)/NTX) == 0 ){
+              channel=GET_CHANNEL(random_rand(),0);
+              // join_trial++;
             }
-            channel = GET_CHANNEL(r, s);
+            // channel = GET_CHANNEL(r, s);
             my_radio_rx(my_rx_buffer, channel);
             rtimer_clock_t to = 2UL*ROUND_PERIOD+random_rand()%ROUND_PERIOD;
             #if (RADIO_MODE_CONF == RADIO_MODE_MODE_Ieee802154_250Kbit)
@@ -393,7 +394,7 @@ PROCESS_THREAD(tx_process, ev, data)
             BUSYWAIT_UNTIL(NRF_RADIO->EVENTS_ADDRESS != 0UL, to);
             got_address_event = NRF_RADIO->EVENTS_ADDRESS;
             #endif
-            r++; s++;
+            // r++; s++;
             watchdog_periodic();
             slot_started = 1;
           } else {
