@@ -5,6 +5,7 @@
 
 
 #default settings
+REPEAT=1
 DURATION=10
 period=200
 tx_power=-8
@@ -114,7 +115,12 @@ run () {
     #make ${make_target} FNAME=dirty-channel DURATION=${DURATION} NAME=${FIRMWARE_NAME}
 
     scp -P${TESTBED_PORT} ${FIRMWARE_NAME}.hex ${TESTBED_USERNAME}@${TESTBED_HOSTNAME}:/home/${TESTBED_USERNAME}/newjob.nrf52.hex
-	ssh -p${TESTBED_PORT} ${TESTBED_USERNAME}@${TESTBED_HOSTNAME} "python /usr/testbed/scripts/testbed.py create --name '${FIRMWARE_NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex --hosts /home/ban/all-hosts"
+    tries=${REPEAT};
+	rpt=0; while [ "${rpt}" -lt "${tries}" ] ; do 
+		echo "Repeatition ${rpt}:"; 
+		rpt=$(( ${rpt} + 1 )); 
+	    ssh -p${TESTBED_PORT} ${TESTBED_USERNAME}@${TESTBED_HOSTNAME} "python /usr/testbed/scripts/testbed.py create --name '${FIRMWARE_NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/ban/newjob.nrf52.hex --hosts /home/ban/all-hosts"; 
+    done;
 }
 
 stop () {
@@ -186,6 +192,10 @@ while :; do
         -e|--evaluate)
             checkip;
             evaluate;
+            if [ "$2" ]; then
+                REPEAT=$2
+                shift
+            fi
             ;;
         -d|--duration)       # Takes an option argument; ensure it has been specified.
             if [ "$2" ]; then
