@@ -11,6 +11,7 @@ GRAZ_TEST_PROTOCOL_COLLECT=6653
 GRAZ_LAYOUT ?= 1
 log ?= true
 jamming ?= 0
+REPEAT ?= 1
 
 ##### include these testbed credentials
 # CAU_USER:=
@@ -177,7 +178,7 @@ testbedstart:
 testbedcompileschedule: $(CONTIKI_PROJECT)
 	cp $(CONTIKI_PROJECT).hex $(FIRMWARE_NAME).hex
 	scp -P${CAU_PORT} $(CONTIKI_PROJECT).hex ${CAU_USER}@${CAU_SERVER}:/home/${CAU_USER}/newjob.nrf52.hex
-	ssh -p${CAU_PORT} ${CAU_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py create --name '${FIRMWARE_NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/${CAU_USER}/newjob.nrf52.hex --hosts /home/${CAU_USER}/all-hosts"
+	for i in $(shell seq 0 ${REPEAT}); do ssh -p${CAU_PORT} ${CAU_USER}@${CAU_SERVER} "python /usr/testbed/scripts/testbed.py create --name '${FIRMWARE_NAME}' --platform 'nrf52' --duration ${DURATION} --copy-from /home/${CAU_USER}/newjob.nrf52.hex --hosts /home/${CAU_USER}/all-hosts"; done
 
 testbedschedule: 
 	scp -P${CAU_PORT} $(FNAME).hex ${CAU_USER}@${CAU_SERVER}:/home/${CAU_USER}/newjob.nrf52.hex
