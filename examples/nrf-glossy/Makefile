@@ -311,13 +311,13 @@ grazevaluatetxpower:
 	done;
 
 grazevaluatentx:
-	@tries=3; \
+	@tries=3; tx_power0=0;\
 	repeat=0; while [ "$${repeat}" -lt "$${tries}" ] ; do \
 		echo "Repeatition $${repeat}:"; \
 		repeat=$$(( $${repeat} + 1 )); \
 			for ntx in 2 3 4 8; do \
 				for mode in 3 4 5 6 15; do \
-					make clean && make capture=0 initiator=0 n_channels=3 overrive_ch37=0 round_robin_initiator=0 cpu_busywait=0 DURATION=${DURATION} ntx=$${ntx} tx_power=8 TESTBED_CONF=GRAZ_TESTBED ble_mode=$${mode} GRAZ_LAYOUT=1 period=300 jamming=0 log=true -j4 graztestbedschedule; \
+					make clean && make capture=0 initiator=0 n_channels=3 overrive_ch37=0 round_robin_initiator=0 cpu_busywait=0 DURATION=${DURATION} ntx=$${ntx} tx_power=$${tx_power0} TESTBED_CONF=GRAZ_TESTBED ble_mode=$${mode} GRAZ_LAYOUT=1 period=400 jamming=0 log=true -j4 graztestbedschedule; \
 				done; \
 			done; \
 	done; 
